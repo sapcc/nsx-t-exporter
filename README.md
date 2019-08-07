@@ -54,18 +54,3 @@ services:
 ## Metrics
 
 Metrics will be made available on http://<docker_host>:9191/metrics
-
-
-/*
-TODO - Remove
-
-export NSXV3_LOGIN_HOST=nsx-floatin-ip.corp.local
-export NSXV3_LOGIN_PORT=443
-export NSXV3_LOGIN_USER=admin
-export NSXV3_LOGIN_PASSWORD=VMwarensbu_1
-export
-export NSXV3_REQUESTS_PER_SECOND=10
-export NSXV3_SUPPRESS_SSL_WORNINGS=true
-export SCRAP_PORT=9999
-
-*/
