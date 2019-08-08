@@ -16,7 +16,7 @@ FROM alpine:3.6
 RUN apk --no-cache add ca-certificates \
  && addgroup nsxv3exporter \
  && adduser -S -G nsxv3exporter nsxv3exporter
-USER exporter
+USER nsxv3exporter
 COPY --from=build /bin/main /bin/main
 ENV LISTEN_PORT=9191
 EXPOSE 9191
