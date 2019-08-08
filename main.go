@@ -49,7 +49,9 @@ func main() {
 	log.SetLevel(logging.DebugLevel)
 
 	// A common pattern is to re-use fields between logging statements
-	contextLogger := log.WithFields(structs.Map(exporterConfig))
+	loggingContext := exporterConfig
+	loggingContext.LoginPassword = "*******"
+	contextLogger := log.WithFields(structs.Map(loggingContext))
 
 	contextLogger.Info("Starting Exporter")
 
