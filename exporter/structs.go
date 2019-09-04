@@ -14,17 +14,51 @@ type Exporter struct {
 	config.NSXv3Configuration
 }
 
-// Nsxv3Data represent current snapshot of metrics
+// Nsxv3LogicalSwitchData represent the current snapshot of metrics
+// for a logical switch
+type Nsxv3LogicalSwitchData struct {
+	statusMetric float64
+	name         string
+}
+
+// Nsxv3NodeStorageData represent the current snapshot of metrics
+// for a single node filesystem
+type Nsxv3NodeStorageData struct {
+	usedMetric  float64
+	totalMetric float64
+	filesystem  string
+}
+
+// Nsxv3ManagementNodeData represent the current snapshot of metrics for a single management node
+type Nsxv3ManagementNodeData struct {
+	IP           string
+	Connectivity float64
+	CPUCores     float64
+	// Averadge load index [0] := 1min, [1] := 5min, [2] := 15min
+	LoadAverage  [3]float64
+	MemoryUse    float64
+	MemoryTotal  float64
+	MemoryCached float64
+	SwapUse      float64
+	SwapTotal    float64
+	Storage      []Nsxv3NodeStorageData
+}
+
+// Nsxv3ControlNodeData represent the current snapshot of metrics for a single control node
+type Nsxv3ControlNodeData struct {
+	IP                    string
+	Connectivity          float64
+	ManagmentConnectivity float64
+}
+
+// Nsxv3Data represent the current snapshot of metrics
 type Nsxv3Data struct {
-	Nsxv3ClusterHost string
-
-	Nsxv3ClusterManagementActive float64
-	Nsxv3ClusterControlActive    float64
-	Nsxv3ClusterOnlineNodes      float64
-	Nsxv3ClusterOfflineNodes     float64
-
-	NsxV3FirewallRulesTotal    float64
-	NsxV3IPSetsTotal           float64
-	NsxV3INSGroupsTotal        float64
-	NsxV3ILogicalSwitchesTotal float64
+	ClusterHost             string
+	ClusterManagementStatus float64
+	ClusterControlStatus    float64
+	ClusterOnlineNodes      float64
+	ClusterOfflineNodes     float64
+	ManagementNodes         []Nsxv3ManagementNodeData
+	ControlNodes            []Nsxv3ControlNodeData
+	LogicalSwitches         []Nsxv3LogicalSwitchData
 }

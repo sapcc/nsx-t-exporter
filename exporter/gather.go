@@ -3,60 +3,214 @@ package exporter
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 )
 
-type managementClusterStatus struct {
-	Status       string                        `json:"status"`
-	OnlineNodes  []map[string]*json.RawMessage `json:"online_nodes"`
-	OfflineNodes []map[string]*json.RawMessage `json:"offline_nodes"`
+var managementClusterStates = map[string]float64{
+	"STABLE":       1,
+	"INITIALIZING": 0,
+	"UNSTABLE":     -1,
+	"DEGRADED":     -2,
+	"UNKNOWN":      -3,
 }
 
-type controlClusterStatus struct {
-	Status string `json:"status"`
+var controlClusterStates = map[string]float64{
+	"STABLE":         1,
+	"NO_CONTROLLERS": 0,
+	"UNSTABLE":       -1,
+	"DEGRADED":       -2,
+	"UNKNOWN":        -3,
 }
 
-type clusterStatus struct {
-	ManagementClusterStatus managementClusterStatus `json:"mgmt_cluster_status"`
-	ControlClusterStatus    controlClusterStatus    `json:"control_cluster_status"`
+var nodeConnectivityStates = map[string]float64{
+	"CONNECTED": 1,
+	"DEGRADED":  0,
+	"UNKNOWN":   -1,
 }
 
-const httpPathClusterStatus = "/api/v1/cluster/status"
+var logicalSwitchAdminStates = map[string]float64{
+	"UP":   1,
+	"DOWN": 0,
+}
+
+var noCursor = ""
 
 var (
-	endpoints map[string]func(resp *Nsxv3Response, data *Nsxv3Data)
+	endpoints map[string]func(resp *Nsxv3Response, data *Nsxv3Data) string
 )
 
-func clusterStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) {
-	var status clusterStatus
+func clusterStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
+	var info map[string]interface{}
+	json.Unmarshal([]byte(resp.body), &info)
+
+	info = info["mgmt_cluster_status"].(map[string]interface{})
+
+	data.ClusterManagementStatus = managementClusterStates[info["status"].(string)]
+	data.ClusterControlStatus = controlClusterStates[info["status"].(string)]
+
+	data.ClusterOnlineNodes = float64(len(info["online_nodes"].([]interface{})))
+	data.ClusterOfflineNodes = float64(len(info["offline_nodes"].([]interface{})))
+
+	return noCursor
+}
+
+func clusterNodesStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
+	var status map[string]interface{}
 	json.Unmarshal([]byte(resp.body), &status)
-	if status.ManagementClusterStatus.Status == "STABLE" {
-		data.Nsxv3ClusterManagementActive = 1
+
+	mgmtNodes := status["management_cluster"].([]interface{})
+
+	for _, node := range mgmtNodes {
+		nodeData := new(Nsxv3ManagementNodeData)
+
+		nodeProperties := node.(map[string]interface{})
+
+		nodeData.IP = nodeProperties["role_config"].(map[string]interface{})["api_listen_addr"].(map[string]interface{})["ip_address"].(string)
+
+		nodeData.Connectivity = nodeConnectivityStates[nodeProperties["node_status"].(map[string]interface{})["mgmt_cluster_status"].(map[string]interface{})["mgmt_cluster_status"].(string)]
+
+		timeSeries := nodeProperties["node_status_properties"].([]interface{})
+
+		for _, timeSeria := range timeSeries {
+			prop := timeSeria.(map[string]interface{})
+
+			load := prop["load_average"].([]interface{})
+
+			nodeData.CPUCores = prop["cpu_cores"].(float64)
+
+			nodeData.LoadAverage[0] = load[0].(float64)
+			nodeData.LoadAverage[1] = load[1].(float64)
+			nodeData.LoadAverage[2] = load[2].(float64)
+
+			nodeData.MemoryCached = prop["mem_cache"].(float64)
+			nodeData.MemoryUse = prop["mem_used"].(float64)
+			nodeData.MemoryTotal = prop["mem_total"].(float64)
+			nodeData.SwapTotal = prop["swap_total"].(float64)
+			nodeData.SwapUse = prop["swap_used"].(float64)
+
+			filesystems := prop["file_systems"].([]interface{})
+
+			for _, filesystem := range filesystems {
+				nodeDataStorage := new(Nsxv3NodeStorageData)
+
+				nodeDataStorage.filesystem = filesystem.(map[string]interface{})["mount"].(string)
+				nodeDataStorage.totalMetric = float64(filesystem.(map[string]interface{})["total"].(float64))
+				nodeDataStorage.usedMetric = float64(filesystem.(map[string]interface{})["used"].(float64))
+
+				nodeData.Storage = append(
+					nodeData.Storage,
+					*nodeDataStorage)
+			}
+			// We would like to process only the first of all time serias
+			break
+		}
+		data.ManagementNodes = append(data.ManagementNodes, *nodeData)
 	}
-	if status.ControlClusterStatus.Status == "STABLE" {
-		data.Nsxv3ClusterControlActive = 1
+
+	controlNodes := status["controller_cluster"].([]interface{})
+
+	for _, node := range controlNodes {
+		nodeData := new(Nsxv3ControlNodeData)
+
+		nodeProperties := node.(map[string]interface{})
+
+		nodeData.IP = nodeProperties["role_config"].(map[string]interface{})["control_plane_listen_addr"].(map[string]interface{})["ip_address"].(string)
+
+		controlNodeStatus := nodeProperties["node_status"].(map[string]interface{})["control_cluster_status"].(map[string]interface{})
+
+		nodeData.Connectivity = nodeConnectivityStates[controlNodeStatus["control_cluster_status"].(string)]
+		nodeData.ManagmentConnectivity = nodeConnectivityStates[controlNodeStatus["mgmt_connection_status"].(map[string]interface{})["connectivity_status"].(string)]
+
+		data.ControlNodes = append(data.ControlNodes, *nodeData)
 	}
-	data.Nsxv3ClusterOnlineNodes = float64(len(status.ManagementClusterStatus.OnlineNodes))
-	data.Nsxv3ClusterOfflineNodes = float64(len(status.ManagementClusterStatus.OfflineNodes))
+	return noCursor
+}
+
+func logicalSwitchStatusHander(resp *Nsxv3Response, data *Nsxv3Data) string {
+	var status map[string]interface{}
+	json.Unmarshal([]byte(resp.body), &status)
+
+	lswitches := status["results"].([]interface{})
+
+	next := ""
+	cursor := status["cursor"]
+	if cursor != nil {
+		next = cursor.(string)
+	}
+
+	for _, lswitch := range lswitches {
+		lswitchData := new(Nsxv3LogicalSwitchData)
+
+		lswitchProperties := lswitch.(map[string]interface{})
+
+		lswitchData.name = lswitchProperties["display_name"].(string)
+		lswitchData.statusMetric = logicalSwitchAdminStates[lswitchProperties["admin_state"].(string)]
+
+		data.LogicalSwitches = append(data.LogicalSwitches, *lswitchData)
+	}
+	return next
 }
 
 func init() {
-	endpoints = map[string]func(resp *Nsxv3Response, data *Nsxv3Data){
-		"/api/v1/cluster/status": clusterStatusHandler,
+	endpoints = map[string]func(resp *Nsxv3Response, data *Nsxv3Data) string{
+		"/api/v1/cluster/status":       clusterStatusHandler,
+		"/api/v1/cluster/nodes/status": clusterNodesStatusHandler,
+		"/api/v1/logical-switches":     logicalSwitchStatusHander,
 	}
 }
 
 // gatherData - Collects the data from the API and stores into struct
 func (e *Exporter) gatherData(data *Nsxv3Data) error {
 
-	data.Nsxv3ClusterHost = e.NSXv3Configuration.LoginHost
+	data.ClusterHost = e.NSXv3Configuration.LoginHost
 
 	ch := make(chan *Nsxv3Response, len(endpoints))
 
 	client := GetClient(e.NSXv3Configuration)
 
-	client.AsyncGetRequest(httpPathClusterStatus, ch)
+	log.Info("Data collection started")
+
+	// Make initial calls
+	for path := range endpoints {
+		log.Info("Data collection from " + path)
+		client.AsyncGetRequest(path, ch)
+	}
+
+	cursors := e.gatherDataWithCursors(data, ch)
+
+	// In case data is multypage extract the date with cursors
+	for {
+		ch = make(chan *Nsxv3Response, len(cursors))
+
+		for path, cursor := range cursors {
+			if endpoints[path] != nil {
+				log.Info("Data collection from " + path + " with cursor " + cursor)
+				client.AsyncGetRequest(path+"?cursor="+cursor, ch)
+			}
+		}
+
+		// Continue until there are not more cursors
+		cursors = e.gatherDataWithCursors(data, ch)
+
+		if len(cursors) <= 0 {
+			log.Info("Data collection completed")
+			return nil
+		}
+
+	}
+}
+
+// gatherDataWithCursors - Collects the data from the API and stores into struct
+// In case the returned data contains cursor for next page return the map of path/cursors
+func (e *Exporter) gatherDataWithCursors(data *Nsxv3Data, ch chan *Nsxv3Response) map[string]string {
+
+	cursors := make(map[string]string)
+
+	if cap(ch) <= 0 {
+		return cursors
+	}
 
 	reqCountHandled := 0
 	for {
@@ -68,18 +222,25 @@ func (e *Exporter) gatherData(data *Nsxv3Data) error {
 			}
 
 			if handler, ok := endpoints[resp.path]; ok {
-				handler(resp, data)
-			}else{
+				cursor := handler(resp, data)
+				if cursor != "" {
+					cursors[resp.path] = cursor
+					log.Info("Data collection completed for " + resp.path + " with cursor " + cursor)
+				} else {
+					log.Info("Data collection completed for " + resp.path)
+				}
+
+			} else {
 				log.Error(fmt.Printf("There is no handler function for Path='%s'", resp.path))
 			}
 
 			reqCountHandled++
 
-			if reqCountHandled == len(endpoints) {
-				return nil
+			if reqCountHandled >= cap(ch) {
+				log.Info("Data collection completed for bucket with size " + strconv.Itoa(cap(ch)))
+				return cursors
 			}
 		}
-
 	}
 
 }

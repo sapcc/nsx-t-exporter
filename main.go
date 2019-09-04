@@ -11,7 +11,7 @@ import (
 	"github.com/fatih/structs"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	logging "github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -26,14 +26,13 @@ var (
 )
 
 var (
-	log            = logging.New()
 	exporterConfig config.NSXv3Configuration
 	metrics        map[string]*prometheus.Desc
 )
 
 func init() {
 	// Log as JSON instead of the default ASCII formatter.
-	log.SetFormatter(&logging.JSONFormatter{})
+	log.SetFormatter(&log.JSONFormatter{})
 
 	// Output to stdout instead of the default stderr
 	log.SetOutput(os.Stdout)
@@ -46,7 +45,7 @@ func init() {
 func main() {
 
 	// Only log the warning severity or above.
-	log.SetLevel(logging.DebugLevel)
+	log.SetLevel(log.DebugLevel)
 
 	// A common pattern is to re-use fields between logging statements
 	loggingContext := exporterConfig
