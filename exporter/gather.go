@@ -50,8 +50,12 @@ func clusterStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
 	data.ClusterManagementStatus = managementClusterStates[info["status"].(string)]
 	data.ClusterControlStatus = controlClusterStates[info["status"].(string)]
 
-	data.ClusterOnlineNodes = float64(len(info["online_nodes"].([]interface{})))
-	data.ClusterOfflineNodes = float64(len(info["offline_nodes"].([]interface{})))
+	if onlineNodes, ok := info["online_nodes"]; ok {
+		data.ClusterOnlineNodes = float64(len(onlineNodes.([]interface{})))
+	}
+	if offlineNodes, ok := info["offline_nodes"]; ok {
+		data.ClusterOfflineNodes = float64(len(offlineNodes.([]interface{})))
+	}
 
 	return noCursor
 }
