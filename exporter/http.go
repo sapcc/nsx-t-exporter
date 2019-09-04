@@ -1,23 +1,19 @@
 package exporter
 
 import (
+	"context"
 	"crypto/tls"
-	"net/url"
-
-	// "encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
+	"golang.org/x/time/rate"
+
 	nsxv3config "github.com/sapcc/nsx-t-exporter/config"
 )
-
-/*
-TODO
-- Implement rate limit NSXv3Configuration.RequestsPerSecond
-*/
 
 const pathCreateSession = "/api/session/create"
 const httpHeaderAcceptJSON = "application/json"
@@ -25,10 +21,12 @@ const httpHarderContentTypeJSON = "application/json"
 
 // Nsxv3Client representes connection to NSXc3 Manger
 type Nsxv3Client struct {
-	config nsxv3config.NSXv3Configuration
-	client http.Client
-	cookie string
-	token  string
+	config  nsxv3config.NSXv3Configuration
+	client  http.Client
+	cookie  string
+	token   string
+	limiter *rate.Limiter
+	context context.Context
 }
 
 // Nsxv3Response http.Response wrapper including the error and extracted response content bytes
@@ -50,6 +48,8 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 		client: http.Client{
 			Timeout: time.Second * 10,
 		},
+		limiter: rate.NewLimiter(rate.Limit(c.RequestsPerSecond), 1),
+		context: context.Background(),
 	}
 }
 
@@ -75,7 +75,7 @@ func (c *Nsxv3Client) login(force bool) error {
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.client.Do(req)
+	resp, err := c.executeRequest(req)
 
 	if err != nil {
 		return err
@@ -102,7 +102,7 @@ func (c *Nsxv3Client) AsyncGetRequest(path string, ch chan<- *Nsxv3Response) err
 	req.Header.Set("Cookie", c.cookie)
 	req.Header.Set("X-XSRF-TOKEN", c.token)
 
-	resp, err := c.client.Do(req)
+	resp, err := c.executeRequest(req)
 	if err != nil {
 		return err
 	}
@@ -116,5 +116,21 @@ func (c *Nsxv3Client) AsyncGetRequest(path string, ch chan<- *Nsxv3Response) err
 	ch <- &Nsxv3Response{path, resp, bodyBytes, err}
 
 	return err
+}
 
+func (c *Nsxv3Client) executeRequest(req *http.Request) (*http.Response, error) {
+	var cancel context.CancelFunc
+	var childContext context.Context
+
+	if c.limiter.Allow() == false {
+		childContext, cancel = context.WithTimeout(c.context, 1*time.Second)
+		c.limiter.Wait(childContext)
+	}
+
+	resp, err := c.client.Do(req)
+
+	if err != nil && cancel != nil {
+		cancel()
+	}
+	return resp, err
 }

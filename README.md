@@ -54,3 +54,4 @@ services:
 ## Metrics
 
 Metrics will be made available on http://<docker_host>:9191/metrics
+Metrics export can be seen at METRICS.md
