@@ -42,6 +42,7 @@ type Nsxv3ManagementNodeData struct {
 	SwapUse      float64
 	SwapTotal    float64
 	Storage      []Nsxv3NodeStorageData
+	Version      string
 }
 
 // Nsxv3ControlNodeData represent the current snapshot of metrics for a single control node

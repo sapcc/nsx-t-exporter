@@ -75,6 +75,8 @@ func clusterNodesStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
 
 		nodeData.Connectivity = nodeConnectivityStates[nodeProperties["node_status"].(map[string]interface{})["mgmt_cluster_status"].(map[string]interface{})["mgmt_cluster_status"].(string)]
 
+		nodeData.Version = nodeProperties["node_status"].(map[string]interface{})["version"].(string)
+
 		timeSeries := nodeProperties["node_status_properties"].([]interface{})
 
 		for _, timeSeria := range timeSeries {

@@ -37,6 +37,12 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
 	)
 
+	APIMetrics["ManagementNodeVersion"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "management_node", "version"),
+		"NSX-T management node version",
+		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip", "nsxv3_node_version"}, nil,
+	)
+
 	APIMetrics["ManagementNodeCpuCores"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "cpu_cores"),
 		"NSX-T management node cpu cores",
@@ -160,11 +166,15 @@ func (e *Exporter) processManagementNodeMetrics(host string, data *Nsxv3Manageme
 		data.Connectivity,
 		host, data.IP)
 	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["ManagementNodeVersion"],
+		prometheus.CounterValue,
+		1,
+		host, data.IP, data.Version)
+	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["ManagementNodeCpuCores"],
 		prometheus.GaugeValue,
 		data.CPUCores,
 		host, data.IP)
-
 	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["ManagementNodeLoadAverage"],
 		prometheus.GaugeValue,
