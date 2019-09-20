@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
@@ -43,10 +44,20 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
+	timeout := time.Duration(c.RequestTimeout)
+
+	var netTransport = &http.Transport{
+		Dial: (&net.Dialer{
+			Timeout: timeout,
+		}).Dial,
+		TLSHandshakeTimeout: timeout,
+	}
+
 	return Nsxv3Client{
 		config: c,
 		client: http.Client{
-			Timeout: time.Second * 10,
+			Timeout:   timeout,
+			Transport: netTransport,
 		},
 		limiter: rate.NewLimiter(rate.Limit(c.RequestsPerSecond), 1),
 		context: context.Background(),
