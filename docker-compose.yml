@@ -15,6 +15,7 @@ services:
       - NSXV3_LOGIN_USER=<NSX-T Manager Node login user>
       - NSXV3_LOGIN_PASSWORD=<NSX-T Manager Node login password>
       - NSXV3_REQUESTS_PER_SECOND=<NSX-T Manager Node requestes per second [<100]>
+      - NSXV3_REQUEST_TIMEOUT_SECONDS=<NSX-T Manager request timeout in seconds>
       - NSXV3_SUPPRESS_SSL_WORNINGS=<NSX-T Manager Node disables ssl host validattion>
       - LOG_LEVEL=<NSX-T Exporter logging level.>
 

@@ -14,11 +14,19 @@ type Exporter struct {
 	config.NSXv3Configuration
 }
 
-// Nsxv3LogicalSwitchData represent the current snapshot of metrics
-// for a logical switch
-type Nsxv3LogicalSwitchData struct {
-	statusMetric float64
-	name         string
+// Nsxv3LogicalSwitchAdminStateData represent the current snapshot of metrics
+// for a logical switch admin state
+type Nsxv3LogicalSwitchAdminStateData struct {
+	adminStateMetric float64
+	name             string
+	id               string
+}
+
+// Nsxv3LogicalSwitchStateData represent the current snapshot of metrics
+// for a logical switch state
+type Nsxv3LogicalSwitchStateData struct {
+	stateMetric float64
+	id          string
 }
 
 // Nsxv3NodeStorageData represent the current snapshot of metrics
@@ -52,14 +60,23 @@ type Nsxv3ControlNodeData struct {
 	ManagmentConnectivity float64
 }
 
+// Nsxv3TransportNodeData represent the current snapshot of metrics for a single transport node
+type Nsxv3TransportNodeData struct {
+	ID              string
+	State           float64
+	DeploymentState float64
+}
+
 // Nsxv3Data represent the current snapshot of metrics
 type Nsxv3Data struct {
-	ClusterHost             string
-	ClusterManagementStatus float64
-	ClusterControlStatus    float64
-	ClusterOnlineNodes      float64
-	ClusterOfflineNodes     float64
-	ManagementNodes         []Nsxv3ManagementNodeData
-	ControlNodes            []Nsxv3ControlNodeData
-	LogicalSwitches         []Nsxv3LogicalSwitchData
+	ClusterHost                string
+	ClusterManagementStatus    float64
+	ClusterControlStatus       float64
+	ClusterOnlineNodes         float64
+	ClusterOfflineNodes        float64
+	ManagementNodes            []Nsxv3ManagementNodeData
+	ControlNodes               []Nsxv3ControlNodeData
+	TransportNodes             []Nsxv3TransportNodeData
+	LogicalSwitchesAdminStates []Nsxv3LogicalSwitchAdminStateData
+	LogicalSwitchesStates      []Nsxv3LogicalSwitchStateData
 }

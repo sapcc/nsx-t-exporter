@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -28,6 +29,25 @@ var nodeConnectivityStates = map[string]float64{
 	"CONNECTED": 1,
 	"DEGRADED":  0,
 	"UNKNOWN":   -1,
+}
+
+var transportNodeStates = map[string]float64{
+	"SUCCESS":         1,
+	"IN_PROGRESS":     0,
+	"PENDING":         -1,
+	"FAILED":          -2,
+	"PARTIAL_SUCCESS": -3,
+	"ORPHANED":        -4,
+	"UNKNOWN":         -5,
+}
+
+var logicalSwitchStates = map[string]float64{
+	"SUCCESS":         1,
+	"IN_PROGRESS":     0,
+	"FAILED":          -1,
+	"PARTIAL_SUCCESS": -2,
+	"ORPHANED":        -3,
+	"UNKNOWN":         -4,
 }
 
 var logicalSwitchAdminStates = map[string]float64{
@@ -134,7 +154,33 @@ func clusterNodesStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
 	return noCursor
 }
 
-func logicalSwitchStatusHander(resp *Nsxv3Response, data *Nsxv3Data) string {
+func transportNodeStateHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
+	var status map[string]interface{}
+	json.Unmarshal([]byte(resp.body), &status)
+
+	nodes := status["results"].([]interface{})
+
+	next := ""
+	cursor := status["cursor"]
+	if cursor != nil {
+		next = cursor.(string)
+	}
+
+	for _, node := range nodes {
+		nodeData := new(Nsxv3TransportNodeData)
+
+		nodeProperties := node.(map[string]interface{})
+
+		nodeData.ID = nodeProperties["transport_node_id"].(string)
+		nodeData.State = transportNodeStates[strings.ToUpper(nodeProperties["state"].(string))]
+		nodeData.DeploymentState = transportNodeStates[strings.ToUpper(nodeProperties["node_deployment_state"].(map[string]interface{})["state"].(string))]
+
+		data.TransportNodes = append(data.TransportNodes, *nodeData)
+	}
+	return next
+}
+
+func logicalSwitchAdminStateHander(resp *Nsxv3Response, data *Nsxv3Data) string {
 	var status map[string]interface{}
 	json.Unmarshal([]byte(resp.body), &status)
 
@@ -147,23 +193,51 @@ func logicalSwitchStatusHander(resp *Nsxv3Response, data *Nsxv3Data) string {
 	}
 
 	for _, lswitch := range lswitches {
-		lswitchData := new(Nsxv3LogicalSwitchData)
+		lswitchData := new(Nsxv3LogicalSwitchAdminStateData)
 
 		lswitchProperties := lswitch.(map[string]interface{})
 
+		lswitchData.id = lswitchProperties["id"].(string)
 		lswitchData.name = lswitchProperties["display_name"].(string)
-		lswitchData.statusMetric = logicalSwitchAdminStates[lswitchProperties["admin_state"].(string)]
+		lswitchData.adminStateMetric = logicalSwitchAdminStates[lswitchProperties["admin_state"].(string)]
 
-		data.LogicalSwitches = append(data.LogicalSwitches, *lswitchData)
+		data.LogicalSwitchesAdminStates = append(data.LogicalSwitchesAdminStates, *lswitchData)
+	}
+	return next
+}
+
+func logicalSwitchStateHander(resp *Nsxv3Response, data *Nsxv3Data) string {
+	var status map[string]interface{}
+	json.Unmarshal([]byte(resp.body), &status)
+
+	lswitches := status["results"].([]interface{})
+
+	next := ""
+	cursor := status["cursor"]
+	if cursor != nil {
+		next = cursor.(string)
+	}
+
+	for _, lswitch := range lswitches {
+		lswitchData := new(Nsxv3LogicalSwitchStateData)
+
+		lswitchProperties := lswitch.(map[string]interface{})
+
+		lswitchData.id = lswitchProperties["logical_switch_id"].(string)
+		lswitchData.stateMetric = logicalSwitchStates[strings.ToUpper(lswitchProperties["state"].(string))]
+
+		data.LogicalSwitchesStates = append(data.LogicalSwitchesStates, *lswitchData)
 	}
 	return next
 }
 
 func init() {
 	endpoints = map[string]func(resp *Nsxv3Response, data *Nsxv3Data) string{
-		"/api/v1/cluster/status":       clusterStatusHandler,
-		"/api/v1/cluster/nodes/status": clusterNodesStatusHandler,
-		"/api/v1/logical-switches":     logicalSwitchStatusHander,
+		"/api/v1/cluster/status":         clusterStatusHandler,
+		"/api/v1/cluster/nodes/status":   clusterNodesStatusHandler,
+		"/api/v1/logical-switches":       logicalSwitchAdminStateHander,
+		"/api/v1/logical-switches/state": logicalSwitchStateHander,
+		"/api/v1/transport-nodes/state":  transportNodeStateHandler,
 	}
 }
 
