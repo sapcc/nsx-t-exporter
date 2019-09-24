@@ -298,7 +298,7 @@ func (e *Exporter) gatherDataWithCursors(data *Nsxv3Data, ch chan *Nsxv3Response
 		case resp := <-ch:
 			if resp.err != nil {
 				log.Errorf("Error scraping NSX-T, Error: %v", resp.err)
-				break
+				return cursors
 			}
 
 			if handler, ok := endpoints[resp.path]; ok {
