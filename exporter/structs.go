@@ -1,15 +1,15 @@
 package exporter
 
 import (
-	"github.com/sapcc/nsx-t-exporter/config"
-
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/sapcc/nsx-t-exporter/config"
 )
 
 // Exporter is used to store Metrics data and embeds the config struct.
 // This is done so that the relevant functions have easy access to the
 // user defined runtime configuration when the Collect method is called.
 type Exporter struct {
+	Cache      Nsxv3Data
 	APIMetrics map[string]*prometheus.Desc
 	config.NSXv3Configuration
 }

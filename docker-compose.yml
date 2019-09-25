@@ -17,6 +17,8 @@ services:
       - NSXV3_REQUESTS_PER_SECOND=<NSX-T Manager Node requestes per second [<100]>
       - NSXV3_REQUEST_TIMEOUT_SECONDS=<NSX-T Manager request timeout in seconds>
       - NSXV3_SUPPRESS_SSL_WORNINGS=<NSX-T Manager Node disables ssl host validattion>
+      - SCRAP_PORT=<The exporter scrap port>
+      - SCRAP_SCHEDULE_SECONDS=<The exporter scrap NSX-T Manager schedule in seconds>
       - LOG_LEVEL=<NSX-T Exporter logging level.>
 
 

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/sapcc/nsx-t-exporter/config"
 	"github.com/sapcc/nsx-t-exporter/exporter"
@@ -58,6 +59,17 @@ func main() {
 		APIMetrics:         metrics,
 		NSXv3Configuration: exporterConfig,
 	}
+
+	// Async scrap, required to reduce response time of /matrics API
+	go func() {
+		for {
+			start := time.Now()
+			exporter.CollectAsync()
+			elapsed := time.Now().Sub(start)
+			schedule := time.Duration(exporterConfig.ScrapScheduleSeconds) * time.Second
+			time.Sleep(schedule - elapsed)
+		}
+	}()
 
 	// Register Metrics from each of the endpoints
 	// This invokes the Collect method through the prometheus client libraries.
