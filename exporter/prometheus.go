@@ -14,23 +14,27 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 
 }
 
-// Collect is a Prometheus callback for scrape operations (/metrics page)
-func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
+// CollectAsync - Asynchronously scraps the API and stores into struct
+func (e *Exporter) CollectAsync() {
 
 	data := Nsxv3Data{}
 
 	err := e.gatherData(&data)
-	if err != nil {
-		return
-	}
+
+	// in case of success Cache will be updated with the latest scrap
+	// in case of failure Cache will be updated with zeros
+	e.Cache = data
 
 	if err != nil {
 		log.Errorf("Error gathering Data from remote API: %v", err)
-		return
 	}
+}
 
-	// Set Prometheus gauge metrics using the data
-	err = e.processMetrics(&data, ch)
+// Collect is a Prometheus callback for scrape operations (/metrics page)
+func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
+
+	// Set Prometheus gauge metrics using the e.Cache
+	err := e.processMetrics(&e.Cache, ch)
 
 	if err != nil {
 		log.Error("Error Processing Metrics", err)
