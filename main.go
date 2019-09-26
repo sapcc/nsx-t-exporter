@@ -60,7 +60,7 @@ func main() {
 		NSXv3Configuration: exporterConfig,
 	}
 
-	// Async scrap, required to reduce response time of /matrics API
+	// Async scrap, required to reduce response time of /metrics API
 	go func() {
 		for {
 			start := time.Now()

@@ -44,13 +44,15 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
 	}
 
-	timeout := time.Duration(c.RequestTimeout)
+	timeout := time.Duration(c.RequestTimeout) * time.Second
 
 	var netTransport = &http.Transport{
 		Dial: (&net.Dialer{
-			Timeout: timeout,
+			Timeout:   timeout,
+			KeepAlive: timeout,
 		}).Dial,
 		TLSHandshakeTimeout: timeout,
+		IdleConnTimeout:     timeout,
 	}
 
 	return Nsxv3Client{
