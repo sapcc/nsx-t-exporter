@@ -40,10 +40,6 @@ type Nsxv3Response struct {
 
 // GetClient initialize NSXv3 http client
 func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
-	if c.SuppressSslWornings {
-		http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
-	}
-
 	timeout := time.Duration(c.RequestTimeout) * time.Second
 
 	var netTransport = &http.Transport{
@@ -53,6 +49,7 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 		}).Dial,
 		TLSHandshakeTimeout: timeout,
 		IdleConnTimeout:     timeout,
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: c.SuppressSslWornings},
 	}
 
 	return Nsxv3Client{
@@ -100,14 +97,14 @@ func (c *Nsxv3Client) login(force bool) error {
 }
 
 // AsyncGetRequest executes http get requests in an asych mode
-func (c *Nsxv3Client) AsyncGetRequest(path string, ch chan<- *Nsxv3Response) error {
+func (c *Nsxv3Client) AsyncGetRequest(path string, ch chan<- *Nsxv3Response) {
 	c.login(false)
 
 	req, err := http.NewRequest(
 		"GET",
 		fmt.Sprintf("https://%s%s", c.config.LoginHost, path), nil)
 	if err != nil {
-		return err
+		ch <- &Nsxv3Response{path, nil, []byte{}, err}
 	}
 
 	req.Header.Set("Accept", httpHeaderAcceptJSON)
@@ -117,18 +114,16 @@ func (c *Nsxv3Client) AsyncGetRequest(path string, ch chan<- *Nsxv3Response) err
 
 	resp, err := c.executeRequest(req)
 	if err != nil {
-		return err
+		ch <- &Nsxv3Response{path, nil, []byte{}, err}
 	}
 
 	defer resp.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return err
+		ch <- &Nsxv3Response{path, nil, []byte{}, err}
 	}
 
 	ch <- &Nsxv3Response{path, resp, bodyBytes, err}
-
-	return err
 }
 
 func (c *Nsxv3Client) executeRequest(req *http.Request) (*http.Response, error) {
