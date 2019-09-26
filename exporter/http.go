@@ -97,7 +97,7 @@ func (c *Nsxv3Client) login(force bool) error {
 }
 
 // AsyncGetRequest executes http get requests in an asych mode
-func (c *Nsxv3Client) AsyncGetRequest(path string, ch chan<- *Nsxv3Response) {
+func (c *Nsxv3Client) AsyncGetRequest(path string, ch chan<- *Nsxv3Response) error {
 	c.login(false)
 
 	req, err := http.NewRequest(
@@ -115,15 +115,18 @@ func (c *Nsxv3Client) AsyncGetRequest(path string, ch chan<- *Nsxv3Response) {
 	resp, err := c.executeRequest(req)
 	if err != nil {
 		ch <- &Nsxv3Response{path, nil, []byte{}, err}
+		return err
 	}
 
 	defer resp.Body.Close()
 	bodyBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		ch <- &Nsxv3Response{path, nil, []byte{}, err}
+		return err
 	}
 
 	ch <- &Nsxv3Response{path, resp, bodyBytes, err}
+	return nil
 }
 
 func (c *Nsxv3Client) executeRequest(req *http.Request) (*http.Response, error) {
