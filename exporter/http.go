@@ -50,6 +50,7 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 		TLSHandshakeTimeout: timeout,
 		IdleConnTimeout:     timeout,
 		TLSClientConfig:     &tls.Config{InsecureSkipVerify: c.SuppressSslWornings},
+		MaxIdleConnsPerHost: 100,
 	}
 
 	return Nsxv3Client{
