@@ -2,7 +2,7 @@ FROM golang:1.13-alpine as build
 LABEL maintainer "SAP"
 
 RUN apk --no-cache add ca-certificates \
- && apk --no-cache add --virtual build-deps git
+ && apk --no-cache add --virtual build-deps git build-base
 
 COPY ./ /go/src/github.com/sapcc/github.com/sapcc/nsx-t-exporter
 WORKDIR /go/src/github.com/sapcc/github.com/sapcc/nsx-t-exporter
