@@ -50,7 +50,8 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 		TLSHandshakeTimeout: timeout,
 		IdleConnTimeout:     timeout,
 		TLSClientConfig:     &tls.Config{InsecureSkipVerify: c.SuppressSslWornings},
-		MaxIdleConnsPerHost: 100,
+		MaxIdleConns:        c.RequestsConnPoolSize,
+		MaxIdleConnsPerHost: c.RequestsConnPoolSize,
 	}
 
 	return Nsxv3Client{
@@ -91,6 +92,7 @@ func (c *Nsxv3Client) login(force bool) error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	c.cookie = resp.Header.Get("Set-Cookie")
 	c.token = resp.Header.Get("X-XSRF-TOKEN")
