@@ -255,11 +255,7 @@ func (e *Exporter) gatherData(data *Nsxv3Data) error {
 	// Make initial calls
 	for path := range endpoints {
 		log.Info("Data collection from " + path)
-		err := client.AsyncGetRequest(path, ch)
-
-		if err != nil {
-			log.Errorf("Request to NSX-T Manager has failed: %v", err)
-		}
+		client.AsyncGetRequest(path, ch)
 	}
 
 	cursors := e.gatherDataWithCursors(data, ch)
@@ -271,10 +267,7 @@ func (e *Exporter) gatherData(data *Nsxv3Data) error {
 		for path, cursor := range cursors {
 			if endpoints[path] != nil {
 				log.Info("Data collection from " + path + " with cursor " + cursor)
-				err := client.AsyncGetRequest(path+"?cursor="+cursor, ch)
-				if err != nil {
-					log.Errorf("Request to NSX-T Manager has failed: %v", err)
-				}
+				client.AsyncGetRequest(path+"?cursor="+cursor, ch)
 			}
 		}
 
