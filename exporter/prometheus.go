@@ -21,13 +21,13 @@ func (e *Exporter) CollectAsync() {
 
 	err := e.gatherData(&data)
 
-	// in case of success Cache will be updated with the latest scrap
-	// in case of failure Cache will be updated with zeros
-	e.Cache = data
-
+	// in case of error, keep the previously acquired data (cache)
+	// otherwise update the existing cache
 	if err != nil {
 		log.Errorf("Error gathering Data from remote API: %v", err)
+		return
 	}
+	e.Cache = data
 }
 
 // Collect is a Prometheus callback for scrape operations (/metrics page)

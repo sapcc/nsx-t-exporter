@@ -13,6 +13,12 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 		[]string{"nsxv3_manager_hostname"}, nil,
 	)
 
+	APIMetrics["ManagementClusterLastSuccessfulConnection"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "cluster_management", "last_successful_data_fetch"),
+		"NSX-T last successful data fetch in UNIX timestamp converted to float64",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
 	APIMetrics["ControlClusterStatus"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "cluster_control", "status"),
 		"NSX-T control cluster status - STABLE=1, NO_CONTROLLERS=0, UNSTABLE=-1, DEGRADED=-2, UNKNOWN=-3",
@@ -138,6 +144,9 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 
 // processMetrics - processes the response data and sets the metrics using it as a source
 func (e *Exporter) processMetrics(data *Nsxv3Data, ch chan<- prometheus.Metric) error {
+	if !data.ExtractedActualValues {
+		return nil
+	}
 
 	// Prometheus scrape metric callback (concurrent)
 	ch <- prometheus.MustNewConstMetric(
@@ -159,6 +168,12 @@ func (e *Exporter) processMetrics(data *Nsxv3Data, ch chan<- prometheus.Metric) 
 		e.APIMetrics["ManagementClusterNodesOffline"],
 		prometheus.GaugeValue,
 		data.ClusterOfflineNodes,
+		data.ClusterHost)
+
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["ManagementClusterLastSuccessfulConnection"],
+		prometheus.GaugeValue,
+		data.LastSuccessfulDataFetch,
 		data.ClusterHost)
 
 	for _, element := range data.ManagementNodes {
