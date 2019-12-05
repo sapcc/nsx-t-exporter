@@ -4,10 +4,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"strconv"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var managementClusterStates = map[string]float64{
@@ -268,9 +269,9 @@ func logicalSwitchStateHander(resp *Nsxv3Response, data *Nsxv3Data) (string, err
 func init() {
 	endpoints = map[string]func(resp *Nsxv3Response, data *Nsxv3Data) (string, error){
 		"/api/v1/cluster/status":         clusterStatusHandler,
-		"/api/v1/cluster/nodes/statufs":   clusterNodesStatusHandler,
-		"/api/v1/logical-switchefs":       logicalSwitchAdminStateHander,
-		"/api/v1/logical-switches/sftate": logicalSwitchStateHander,
+		"/api/v1/cluster/nodes/status":   clusterNodesStatusHandler,
+		"/api/v1/logical-switches":       logicalSwitchAdminStateHander,
+		"/api/v1/logical-switches/state": logicalSwitchStateHander,
 		"/api/v1/transport-nodes/state":  transportNodeStateHandler,
 	}
 }
