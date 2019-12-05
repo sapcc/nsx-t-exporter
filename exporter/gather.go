@@ -2,9 +2,11 @@ package exporter
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -58,12 +60,18 @@ var logicalSwitchAdminStates = map[string]float64{
 var noCursor = ""
 
 var (
-	endpoints map[string]func(resp *Nsxv3Response, data *Nsxv3Data) string
+	endpoints map[string]func(resp *Nsxv3Response, data *Nsxv3Data) (string, error)
 )
 
-func clusterStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
+func clusterStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
+	responseStatusCode := resp.response.StatusCode
+	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
+		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
+		return noCursor, err
+	}
+
 	var info map[string]interface{}
-	json.Unmarshal([]byte(resp.body), &info)
+	json.Unmarshal(resp.body, &info)
 
 	info = info["mgmt_cluster_status"].(map[string]interface{})
 
@@ -76,16 +84,21 @@ func clusterStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
 	if offlineNodes, ok := info["offline_nodes"]; ok {
 		data.ClusterOfflineNodes = float64(len(offlineNodes.([]interface{})))
 	}
-
-	return noCursor
+	return noCursor, nil
 }
 
-func clusterNodesStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
+func clusterNodesStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
+
+	responseStatusCode := resp.response.StatusCode
+	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
+		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
+		return noCursor, err
+	}
+
 	var status map[string]interface{}
-	json.Unmarshal([]byte(resp.body), &status)
+	json.Unmarshal(resp.body, &status)
 
 	mgmtNodes := status["management_cluster"].([]interface{})
-
 	for _, node := range mgmtNodes {
 		nodeData := new(Nsxv3ManagementNodeData)
 
@@ -151,21 +164,31 @@ func clusterNodesStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
 
 		data.ControlNodes = append(data.ControlNodes, *nodeData)
 	}
-	return noCursor
+	return noCursor, nil
 }
 
-func transportNodeStateHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
-	var status map[string]interface{}
-	json.Unmarshal([]byte(resp.body), &status)
+func transportNodeStateHandler(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
+	responseStatusCode := resp.response.StatusCode
+	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
+		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
+		return noCursor, err
+	}
 
-	nodes := status["results"].([]interface{})
+	var status map[string]interface{}
+	json.Unmarshal(resp.body, &status)
+
+	results := status["results"]
+	var nodes []interface{}
+
+	if results != nil {
+		nodes = results.([]interface{})
+	}
 
 	next := ""
 	cursor := status["cursor"]
 	if cursor != nil {
 		next = cursor.(string)
 	}
-
 	for _, node := range nodes {
 		nodeData := new(Nsxv3TransportNodeData)
 
@@ -177,12 +200,18 @@ func transportNodeStateHandler(resp *Nsxv3Response, data *Nsxv3Data) string {
 
 		data.TransportNodes = append(data.TransportNodes, *nodeData)
 	}
-	return next
+	return next, nil
 }
 
-func logicalSwitchAdminStateHander(resp *Nsxv3Response, data *Nsxv3Data) string {
+func logicalSwitchAdminStateHander(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
+	responseStatusCode := resp.response.StatusCode
+	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
+		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
+		return noCursor, err
+	}
+
 	var status map[string]interface{}
-	json.Unmarshal([]byte(resp.body), &status)
+	json.Unmarshal(resp.body, &status)
 
 	lswitches := status["results"].([]interface{})
 
@@ -203,12 +232,18 @@ func logicalSwitchAdminStateHander(resp *Nsxv3Response, data *Nsxv3Data) string 
 
 		data.LogicalSwitchesAdminStates = append(data.LogicalSwitchesAdminStates, *lswitchData)
 	}
-	return next
+	return next, nil
 }
 
-func logicalSwitchStateHander(resp *Nsxv3Response, data *Nsxv3Data) string {
+func logicalSwitchStateHander(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
+	responseStatusCode := resp.response.StatusCode
+	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
+		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
+		return noCursor, err
+	}
+
 	var status map[string]interface{}
-	json.Unmarshal([]byte(resp.body), &status)
+	json.Unmarshal(resp.body, &status)
 
 	lswitches := status["results"].([]interface{})
 
@@ -228,11 +263,11 @@ func logicalSwitchStateHander(resp *Nsxv3Response, data *Nsxv3Data) string {
 
 		data.LogicalSwitchesStates = append(data.LogicalSwitchesStates, *lswitchData)
 	}
-	return next
+	return next, nil
 }
 
 func init() {
-	endpoints = map[string]func(resp *Nsxv3Response, data *Nsxv3Data) string{
+	endpoints = map[string]func(resp *Nsxv3Response, data *Nsxv3Data) (string, error){
 		"/api/v1/cluster/status":         clusterStatusHandler,
 		"/api/v1/cluster/nodes/status":   clusterNodesStatusHandler,
 		"/api/v1/logical-switches":       logicalSwitchAdminStateHander,
@@ -255,10 +290,14 @@ func (e *Exporter) gatherData(data *Nsxv3Data) error {
 	// Make initial calls
 	for path := range endpoints {
 		log.Info("Data collection from " + path)
-		client.AsyncGetRequest(path, ch)
+		err := client.AsyncGetRequest(path, ch)
+		if err != nil {
+			return err
+		}
 	}
+	var gatherDataErrors []interface{}
 
-	cursors := e.gatherDataWithCursors(data, ch)
+	cursors, _ := e.gatherDataWithCursors(data, ch, &gatherDataErrors)
 
 	// In case data is multypage extract the date with cursors
 	for {
@@ -267,29 +306,35 @@ func (e *Exporter) gatherData(data *Nsxv3Data) error {
 		for path, cursor := range cursors {
 			if endpoints[path] != nil {
 				log.Info("Data collection from " + path + " with cursor " + cursor)
-				client.AsyncGetRequest(path+"?cursor="+cursor, ch)
+				err := client.AsyncGetRequest(path+"?cursor="+cursor, ch)
+				if err != nil {
+					return err
+				}
 			}
 		}
 
 		// Continue until there are not more cursors
-		cursors = e.gatherDataWithCursors(data, ch)
+		cursors, _ = e.gatherDataWithCursors(data, ch, &gatherDataErrors)
 
-		if len(cursors) <= 0 {
+		if len(cursors) <= 0 && len(gatherDataErrors) == 0 {
 			log.Info("Data collection completed")
+			data.LastSuccessfulDataFetch = float64(time.Now().Unix())
 			return nil
 		}
+
+		return errors.New("there were errors while gathering data from endpoints")
 
 	}
 }
 
 // gatherDataWithCursors - Collects the data from the API and stores into struct
 // In case the returned data contains cursor for next page return the map of path/cursors
-func (e *Exporter) gatherDataWithCursors(data *Nsxv3Data, ch chan *Nsxv3Response) map[string]string {
+func (e *Exporter) gatherDataWithCursors(data *Nsxv3Data, ch chan *Nsxv3Response, gatherDataErrors *[]interface{}) (map[string]string, error) {
 
 	cursors := make(map[string]string)
 
 	if cap(ch) <= 0 {
-		return cursors
+		return cursors, nil
 	}
 
 	reqCountHandled := 0
@@ -298,11 +343,17 @@ func (e *Exporter) gatherDataWithCursors(data *Nsxv3Data, ch chan *Nsxv3Response
 		case resp := <-ch:
 			if resp.err != nil {
 				log.Errorf("Error scraping NSX-T, Error: %v", resp.err)
-				return cursors
+				return cursors, resp.err
 			}
 
 			if handler, ok := endpoints[resp.path]; ok {
-				cursor := handler(resp, data)
+				cursor, err := handler(resp, data)
+				if err != nil {
+					log.Errorf("Error calling endpoint: %v", err)
+					*gatherDataErrors = append(*gatherDataErrors, err)
+					reqCountHandled++
+					break
+				}
 				if cursor != "" {
 					cursors[resp.path] = cursor
 					log.Info("Data collection completed for " + resp.path + " with cursor " + cursor)
@@ -316,10 +367,12 @@ func (e *Exporter) gatherDataWithCursors(data *Nsxv3Data, ch chan *Nsxv3Response
 
 			reqCountHandled++
 
-			if reqCountHandled >= cap(ch) {
-				log.Info("Data collection completed for bucket with size " + strconv.Itoa(cap(ch)))
-				return cursors
-			}
+		}
+
+		if reqCountHandled >= cap(ch) {
+			log.Info("Data collection completed for bucket with size " + strconv.Itoa(cap(ch)))
+			data.ExtractedActualValues = true
+			return cursors, nil
 		}
 	}
 
