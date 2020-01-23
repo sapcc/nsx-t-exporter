@@ -1,6 +1,9 @@
 package exporter
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	log "github.com/sirupsen/logrus"
+)
 
 // GetMetricsDescription - creates Prometheus metrics description
 func GetMetricsDescription() map[string]*prometheus.Desc {
@@ -109,7 +112,7 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
 	)
 
-	APIMetrics["ControlNodeManagmentConnectivity"] = prometheus.NewDesc(
+	APIMetrics["ControlNodeManagementConnectivity"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "control_node", "management_connectivity"),
 		"NSX-T control node management connectivity - CONNECTED > 0, DISCONNECTED = 0, UNKNOWN < 0",
 		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
@@ -133,6 +136,12 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 		[]string{"nsxv3_manager_hostname", "name", "id"}, nil,
 	)
 
+	APIMetrics["LogicalPortOperationalState"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "logical_port", "operational_state"),
+		"NSX-T logical port operational state - UP=1, DOWN=0, UNKNOWN=-1",
+		[]string{"nsxv3_manager_hostname", "id"}, nil,
+	)
+
 	APIMetrics["LogicalSwitchState"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "logical_switch", "state"),
 		"NSX-T logical switch overall state -  SUCCESS=1, IN_PROGRESS=0, FAILED=-1, PARTIAL_SUCCESS=-2, ORPHANED=-3, UNKNOWN=-4",
@@ -145,6 +154,7 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 // processMetrics - processes the response data and sets the metrics using it as a source
 func (e *Exporter) processMetrics(data *Nsxv3Data, ch chan<- prometheus.Metric) error {
 	if !data.ExtractedActualValues {
+		log.Warn("Metrics processing completed with error, will not report any metrics.")
 		return nil
 	}
 
@@ -194,6 +204,10 @@ func (e *Exporter) processMetrics(data *Nsxv3Data, ch chan<- prometheus.Metric) 
 
 	for _, element := range data.LogicalSwitchesStates {
 		e.processLogicalSwitchStateMetrics(data.ClusterHost, &element, ch)
+	}
+
+	for _, element := range data.LogicalPortOperationalStates {
+		e.processLogicalPortOperationalStateMetrics(data.ClusterHost, &element, ch)
 	}
 
 	return nil
@@ -283,9 +297,9 @@ func (e *Exporter) processControlNodeMetrics(host string, data *Nsxv3ControlNode
 		host, data.IP)
 
 	ch <- prometheus.MustNewConstMetric(
-		e.APIMetrics["ControlNodeManagmentConnectivity"],
+		e.APIMetrics["ControlNodeManagementConnectivity"],
 		prometheus.GaugeValue,
-		data.ManagmentConnectivity,
+		data.ManagementConnectivity,
 		host, data.IP)
 
 	return nil
@@ -315,6 +329,16 @@ func (e *Exporter) processLogicalSwitchAdminStateMetrics(host string, data *Nsxv
 		prometheus.GaugeValue,
 		data.adminStateMetric,
 		host, data.name, data.id)
+
+	return nil
+}
+
+func (e *Exporter) processLogicalPortOperationalStateMetrics(host string, data *Nsxv3LogicalPortOperationalStateData, ch chan<- prometheus.Metric) error {
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["LogicalPortOperationalState"],
+		prometheus.GaugeValue,
+		data.operationalStateMetric,
+		host, data.id)
 
 	return nil
 }

@@ -1,12 +1,11 @@
 package exporter
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"strconv"
+	"net/http"
+	"net/url"
 	"strings"
-	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -57,48 +56,35 @@ var logicalSwitchAdminStates = map[string]float64{
 	"DOWN": 0,
 }
 
+var logicalPortOperationalStates = map[string]float64{
+	"UP":      1,
+	"DOWN":    0,
+	"UNKNOWN": -1,
+}
+
 var noCursor = ""
 
 var (
-	endpoints map[string]func(resp *Nsxv3Response, data *Nsxv3Data) (string, error)
+	endpoints []Nsxv3Resource
 )
 
-func clusterStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
-	responseStatusCode := resp.response.StatusCode
-	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
-		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
-		return noCursor, err
-	}
+func clusterStatusHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	managementClusterInfo := status.state["mgmt_cluster_status"].(map[string]interface{})
 
-	var info map[string]interface{}
-	json.Unmarshal(resp.body, &info)
+	data.ClusterManagementStatus = managementClusterStates[managementClusterInfo["status"].(string)]
+	data.ClusterControlStatus = controlClusterStates[managementClusterInfo["status"].(string)]
 
-	info = info["mgmt_cluster_status"].(map[string]interface{})
-
-	data.ClusterManagementStatus = managementClusterStates[info["status"].(string)]
-	data.ClusterControlStatus = controlClusterStates[info["status"].(string)]
-
-	if onlineNodes, ok := info["online_nodes"]; ok {
+	if onlineNodes, ok := managementClusterInfo["online_nodes"]; ok {
 		data.ClusterOnlineNodes = float64(len(onlineNodes.([]interface{})))
 	}
-	if offlineNodes, ok := info["offline_nodes"]; ok {
+	if offlineNodes, ok := managementClusterInfo["offline_nodes"]; ok {
 		data.ClusterOfflineNodes = float64(len(offlineNodes.([]interface{})))
 	}
 	return noCursor, nil
 }
 
-func clusterNodesStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
-
-	responseStatusCode := resp.response.StatusCode
-	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
-		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
-		return noCursor, err
-	}
-
-	var status map[string]interface{}
-	json.Unmarshal(resp.body, &status)
-
-	mgmtNodes := status["management_cluster"].([]interface{})
+func clusterNodesStatusHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	mgmtNodes := status.state["management_cluster"].([]interface{})
 	for _, node := range mgmtNodes {
 		nodeData := new(Nsxv3ManagementNodeData)
 
@@ -148,7 +134,7 @@ func clusterNodesStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) (string, er
 		data.ManagementNodes = append(data.ManagementNodes, *nodeData)
 	}
 
-	controlNodes := status["controller_cluster"].([]interface{})
+	controlNodes := status.state["controller_cluster"].([]interface{})
 
 	for _, node := range controlNodes {
 		nodeData := new(Nsxv3ControlNodeData)
@@ -160,32 +146,23 @@ func clusterNodesStatusHandler(resp *Nsxv3Response, data *Nsxv3Data) (string, er
 		controlNodeStatus := nodeProperties["node_status"].(map[string]interface{})["control_cluster_status"].(map[string]interface{})
 
 		nodeData.Connectivity = nodeConnectivityStates[controlNodeStatus["control_cluster_status"].(string)]
-		nodeData.ManagmentConnectivity = nodeConnectivityStates[controlNodeStatus["mgmt_connection_status"].(map[string]interface{})["connectivity_status"].(string)]
+		nodeData.ManagementConnectivity = nodeConnectivityStates[controlNodeStatus["mgmt_connection_status"].(map[string]interface{})["connectivity_status"].(string)]
 
 		data.ControlNodes = append(data.ControlNodes, *nodeData)
 	}
 	return noCursor, nil
 }
 
-func transportNodeStateHandler(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
-	responseStatusCode := resp.response.StatusCode
-	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
-		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
-		return noCursor, err
-	}
-
-	var status map[string]interface{}
-	json.Unmarshal(resp.body, &status)
-
-	results := status["results"]
+func transportNodeStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	results := status.state["results"]
 	var nodes []interface{}
 
 	if results != nil {
 		nodes = results.([]interface{})
 	}
 
-	next := ""
-	cursor := status["cursor"]
+	next := noCursor
+	cursor := status.state["cursor"]
 	if cursor != nil {
 		next = cursor.(string)
 	}
@@ -203,20 +180,11 @@ func transportNodeStateHandler(resp *Nsxv3Response, data *Nsxv3Data) (string, er
 	return next, nil
 }
 
-func logicalSwitchAdminStateHander(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
-	responseStatusCode := resp.response.StatusCode
-	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
-		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
-		return noCursor, err
-	}
+func logicalSwitchAdminStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	lswitches := status.state["results"].([]interface{})
 
-	var status map[string]interface{}
-	json.Unmarshal(resp.body, &status)
-
-	lswitches := status["results"].([]interface{})
-
-	next := ""
-	cursor := status["cursor"]
+	next := noCursor
+	cursor := status.state["cursor"]
 	if cursor != nil {
 		next = cursor.(string)
 	}
@@ -235,20 +203,30 @@ func logicalSwitchAdminStateHander(resp *Nsxv3Response, data *Nsxv3Data) (string
 	return next, nil
 }
 
-func logicalSwitchStateHander(resp *Nsxv3Response, data *Nsxv3Data) (string, error) {
-	responseStatusCode := resp.response.StatusCode
-	if !(responseStatusCode >= 200 && responseStatusCode <= 299) {
-		err := errors.New(fmt.Sprintf("Request to endpoint %v returned %d", resp.path, responseStatusCode))
-		return noCursor, err
+func logicalPortsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	logicalPorts := status.state["results"].([]interface{})
+
+	next := noCursor
+	cursor := status.state["cursor"]
+	if cursor != nil {
+		next = cursor.(string)
 	}
 
-	var status map[string]interface{}
-	json.Unmarshal(resp.body, &status)
+	for _, logicalPort := range logicalPorts {
+		port := logicalPort.(map[string]interface{})
+		logicalPortData := new(Nsxv3LogicalPortOperationalStateData)
+		logicalPortData.id = port["id"].(string)
+		logicalPortData.operationalStateMetric = logicalPortOperationalStates[port["status"].(map[string]interface{})["status"].(string)]
+		data.LogicalPortOperationalStates = append(data.LogicalPortOperationalStates, *logicalPortData)
+	}
+	return next, nil
+}
 
-	lswitches := status["results"].([]interface{})
+func logicalSwitchStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	lswitches := status.state["results"].([]interface{})
 
-	next := ""
-	cursor := status["cursor"]
+	next := noCursor
+	cursor := status.state["cursor"]
 	if cursor != nil {
 		next = cursor.(string)
 	}
@@ -266,114 +244,163 @@ func logicalSwitchStateHander(resp *Nsxv3Response, data *Nsxv3Data) (string, err
 	return next, nil
 }
 
-func init() {
-	endpoints = map[string]func(resp *Nsxv3Response, data *Nsxv3Data) (string, error){
-		"/api/v1/cluster/status":         clusterStatusHandler,
-		"/api/v1/cluster/nodes/status":   clusterNodesStatusHandler,
-		"/api/v1/logical-switches":       logicalSwitchAdminStateHander,
-		"/api/v1/logical-switches/state": logicalSwitchStateHander,
-		"/api/v1/transport-nodes/state":  transportNodeStateHandler,
+func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
+	switch id := endpointStatusType; id {
+	case ManagementCluster:
+		return Nsxv3Resource{
+			kind: endpointStatusType,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Path: "/api/v1/cluster/status"},
+			},
+		}
+	case ManagementClusterNodes:
+		return Nsxv3Resource{
+			kind: ManagementClusterNodes,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Path: "/api/v1/cluster/nodes/status"},
+			},
+		}
+	case LogicalSwitch:
+		return Nsxv3Resource{
+			kind: LogicalSwitch,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Path: "/api/v1/logical-switches"},
+			},
+		}
+	case LogicalSwitchAdmin:
+		return Nsxv3Resource{
+			kind: LogicalSwitchAdmin,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Path: "/api/v1/logical-switches/state"},
+			},
+		}
+	case TransportNode:
+		return Nsxv3Resource{
+			kind: TransportNode,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Path: "/api/v1/transport-nodes/state"},
+			},
+		}
+	case LogicalPort:
+		return Nsxv3Resource{
+			kind: LogicalPort,
+			request: &http.Request{
+				Method: "GET",
+				URL: &url.URL{
+					Path: "/policy/api/v1/search",
+					RawQuery: url.Values{
+						"query": []string{ // odata query
+							strings.Join([]string{
+								"resource_type:LogicalPort",
+								"status.status:UP",
+								"_exists_:resource_type",
+								"!resource_type:GenericPolicyRealizedResourceORDomain",
+								"!_exists_:nsx_id",
+							}, " AND ")},
+						"page_size":   []string{"100"},
+						"data_source": []string{"ALL"},
+					}.Encode(),
+				},
+			},
+		}
 	}
+	return Nsxv3Resource{}
 }
 
-// gatherData - Collects the data from the API and stores into struct
-func (e *Exporter) gatherData(data *Nsxv3Data) error {
+func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	switch id := status.kind; id {
+	case ManagementCluster:
+		return clusterStatusHandler(data, status)
+	case ManagementClusterNodes:
+		return clusterNodesStatusHandler(data, status)
+	case LogicalSwitch:
+		return logicalSwitchAdminStateHander(data, status)
+	case LogicalSwitchAdmin:
+		return logicalSwitchStateHander(data, status)
+	case TransportNode:
+		return transportNodeStateHandler(data, status)
+	case LogicalPort:
+		return logicalPortsHandler(data, status)
+	}
+	return noCursor, fmt.Errorf("Unsupported Endpoint Type %v", status.kind)
+}
 
+func (e *Exporter) gather(data *Nsxv3Data) error {
+	log.Info("Data collection started")
 	data.ClusterHost = e.NSXv3Configuration.LoginHost
-
-	ch := make(chan *Nsxv3Response, len(endpoints))
-
 	client := GetClient(e.NSXv3Configuration)
 
-	log.Info("Data collection started")
-
-	// Make initial calls
-	for path := range endpoints {
-		log.Info("Data collection from " + path)
-		err := client.AsyncGetRequest(path, ch)
-		if err != nil {
-			return err
-		}
+	endpoints := []Nsxv3Resource{
+		getEndpointStatus(ManagementCluster),
+		getEndpointStatus(ManagementClusterNodes),
+		getEndpointStatus(LogicalSwitchAdmin),
+		getEndpointStatus(LogicalSwitch),
+		getEndpointStatus(TransportNode),
+		getEndpointStatus(LogicalPort),
 	}
-	var gatherDataErrors []interface{}
 
-	cursors, _ := e.gatherDataWithCursors(data, ch, &gatherDataErrors)
+	chSize := len(endpoints)
 
-	// In case data is multypage extract the date with cursors
-	for {
-		ch = make(chan *Nsxv3Response, len(cursors))
+	ch := make(chan error, chSize)
 
-		for path, cursor := range cursors {
-			if endpoints[path] != nil {
-				log.Info("Data collection from " + path + " with cursor " + cursor)
-				err := client.AsyncGetRequest(path+"?cursor="+cursor, ch)
-				if err != nil {
-					return err
-				}
+	for id := range endpoints {
+		go e.updateData(data, &client, &endpoints[id], ch)
+	}
+
+	var errs []interface{}
+
+	for i := 0; i < chSize; i++ {
+		select {
+		case err := <-ch:
+			if err != nil {
+				errs = append(errs, err)
 			}
 		}
-
-		// Continue until there are not more cursors
-		cursors, _ = e.gatherDataWithCursors(data, ch, &gatherDataErrors)
-
-		if len(cursors) <= 0 && len(gatherDataErrors) == 0 {
-			log.Info("Data collection completed")
-			data.LastSuccessfulDataFetch = float64(time.Now().Unix())
-			return nil
-		}
-
-		return errors.New("there were errors while gathering data from endpoints")
-
 	}
+
+	if len(errs) != 0 {
+		e := errors.New("Data collection completed with errors")
+		for _, err := range errs {
+			log.Error(err)
+		}
+		return e
+	}
+
+	data.ExtractedActualValues = true
+
+	log.Info("Data collection completed")
+	return nil
 }
 
-// gatherDataWithCursors - Collects the data from the API and stores into struct
-// In case the returned data contains cursor for next page return the map of path/cursors
-func (e *Exporter) gatherDataWithCursors(data *Nsxv3Data, ch chan *Nsxv3Response, gatherDataErrors *[]interface{}) (map[string]string, error) {
+func (e *Exporter) updateData(data *Nsxv3Data, client *Nsxv3Client, status *Nsxv3Resource, ch chan error) {
+	client.updateEndpointStatus(status)
 
-	cursors := make(map[string]string)
-
-	if cap(ch) <= 0 {
-		return cursors, nil
+	if status.err != nil {
+		ch <- status.err
+		return
 	}
 
-	reqCountHandled := 0
-	for {
-		select {
-		case resp := <-ch:
-			if resp.err != nil {
-				log.Errorf("Error scraping NSX-T, Error: %v", resp.err)
-				return cursors, resp.err
-			}
+	cursor, err := handle(data, status)
 
-			if handler, ok := endpoints[resp.path]; ok {
-				cursor, err := handler(resp, data)
-				if err != nil {
-					log.Errorf("Error calling endpoint: %v", err)
-					*gatherDataErrors = append(*gatherDataErrors, err)
-					reqCountHandled++
-					break
-				}
-				if cursor != "" {
-					cursors[resp.path] = cursor
-					log.Info("Data collection completed for " + resp.path + " with cursor " + cursor)
-				} else {
-					log.Info("Data collection completed for " + resp.path)
-				}
-
-			} else {
-				log.Error(fmt.Printf("There is no handler function for Path='%s'", resp.path))
-			}
-
-			reqCountHandled++
-
+	if err == nil {
+		if cursor == noCursor {
+			ch <- nil
+			return
 		}
 
-		if reqCountHandled >= cap(ch) {
-			log.Info("Data collection completed for bucket with size " + strconv.Itoa(cap(ch)))
-			data.ExtractedActualValues = true
-			return cursors, nil
-		}
+		nextStatus := getEndpointStatus(status.kind)
+
+		query, _ := url.ParseQuery(nextStatus.request.URL.RawQuery)
+		query.Add("cursor", cursor)
+		nextStatus.request.URL.RawQuery = query.Encode()
+
+		e.updateData(data, client, &nextStatus, ch)
+	} else {
+		ch <- err
 	}
-
 }

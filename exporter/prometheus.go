@@ -18,8 +18,7 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 func (e *Exporter) CollectAsync() {
 
 	data := Nsxv3Data{}
-
-	err := e.gatherData(&data)
+	err := e.gather(&data)
 
 	// in case of error, keep the previously acquired data (cache)
 	// otherwise update the existing cache

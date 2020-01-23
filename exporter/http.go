@@ -3,6 +3,7 @@ package exporter
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -20,7 +21,7 @@ const pathCreateSession = "/api/session/create"
 const httpHeaderAcceptJSON = "application/json"
 const httpHarderContentTypeJSON = "application/json"
 
-// Nsxv3Client representes connection to NSXc3 Manger
+// Nsxv3Client represents connection to NSXc3 Manger
 type Nsxv3Client struct {
 	config  nsxv3config.NSXv3Configuration
 	client  http.Client
@@ -30,11 +31,25 @@ type Nsxv3Client struct {
 	context context.Context
 }
 
-// Nsxv3Response http.Response wrapper including the error and extracted response content bytes
-type Nsxv3Response struct {
-	path     string
+// Nsxv3ResourceKind represents Nsxv3Resource type
+type Nsxv3ResourceKind string
+
+// Nsxv3Resource resource kinds
+const (
+	ManagementCluster      Nsxv3ResourceKind = "ManagementCluster"
+	ManagementClusterNodes Nsxv3ResourceKind = "ManagementClusterNodes"
+	TransportNode          Nsxv3ResourceKind = "TransportNode"
+	LogicalSwitchAdmin     Nsxv3ResourceKind = "LogicalSwitchAdmin"
+	LogicalSwitch          Nsxv3ResourceKind = "LogicalSwitch"
+	LogicalPort            Nsxv3ResourceKind = "LogicalPort"
+)
+
+// Nsxv3Resource represents endpoint status snapshot
+type Nsxv3Resource struct {
+	request  *http.Request
 	response *http.Response
-	body     []byte
+	kind     Nsxv3ResourceKind
+	state    map[string]interface{} // JSON
 	err      error
 }
 
@@ -49,7 +64,7 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 		}).Dial,
 		TLSHandshakeTimeout: timeout,
 		IdleConnTimeout:     timeout,
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: c.SuppressSslWornings},
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: c.SuppressSslWarnings},
 		MaxIdleConns:        c.RequestsConnPoolSize,
 		MaxIdleConnsPerHost: c.RequestsConnPoolSize,
 	}
@@ -99,37 +114,40 @@ func (c *Nsxv3Client) login(force bool) error {
 	return nil
 }
 
-// AsyncGetRequest executes http get requests in an asych mode
-func (c *Nsxv3Client) AsyncGetRequest(path string, ch chan<- *Nsxv3Response) error {
+// AsyncGetRequest executes http get requests in an async mode
+func (c *Nsxv3Client) updateEndpointStatus(status *Nsxv3Resource) {
 	c.login(false)
 
-	req, err := http.NewRequest(
-		"GET",
-		fmt.Sprintf("https://%s%s", c.config.LoginHost, path), nil)
-	if err != nil {
-		ch <- &Nsxv3Response{path, nil, []byte{}, err}
+	status.request.URL.Host = c.config.LoginHost
+	status.request.URL.Scheme = "https"
+	status.request.Header = http.Header{}
+	status.request.Header.Set("Accept", httpHeaderAcceptJSON)
+	status.request.Header.Set("Content-Type", httpHarderContentTypeJSON)
+	status.request.Header.Set("Cookie", c.cookie)
+	status.request.Header.Set("X-XSRF-TOKEN", c.token)
+
+	status.response, status.err = c.executeRequest(status.request)
+
+	if status.err != nil {
+		return
 	}
 
-	req.Header.Set("Accept", httpHeaderAcceptJSON)
-	req.Header.Set("Content-Type", httpHarderContentTypeJSON)
-	req.Header.Set("Cookie", c.cookie)
-	req.Header.Set("X-XSRF-TOKEN", c.token)
-
-	resp, err := c.executeRequest(req)
-	if err != nil {
-		ch <- &Nsxv3Response{path, nil, []byte{}, err}
-		return err
+	if !(status.response.StatusCode >= 200 && status.response.StatusCode <= 299) {
+		status.err = fmt.Errorf("Request to endpoint %v failed with %d", status.kind, status.response.StatusCode)
+		return
 	}
 
-	defer resp.Body.Close()
-	bodyBytes, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		ch <- &Nsxv3Response{path, nil, []byte{}, err}
-		return err
+	defer status.response.Body.Close()
+
+	var body []byte
+
+	body, status.err = ioutil.ReadAll(status.response.Body)
+
+	if status.err != nil {
+		return
 	}
 
-	ch <- &Nsxv3Response{path, resp, bodyBytes, err}
-	return nil
+	status.err = json.Unmarshal(body, &status.state)
 }
 
 func (c *Nsxv3Client) executeRequest(req *http.Request) (*http.Response, error) {
