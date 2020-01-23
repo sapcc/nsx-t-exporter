@@ -7,7 +7,7 @@ import (
 
 // NSXv3Configuration holds the configuration of the NSXv3 Manager
 type NSXv3Configuration struct {
-	//LoginPort            int    `env:"NSXV3_LOGIN_PORT" envDefault:"443"`
+	LoginPort            int    `env:"NSXV3_LOGIN_PORT" envDefault:"443"`
 	LoginHost            string `env:"NSXV3_LOGIN_HOST,required"`
 	LoginUser            string `env:"NSXV3_LOGIN_USER,required"`
 	LoginPassword        string `env:"NSXV3_LOGIN_PASSWORD,required"`
@@ -19,8 +19,6 @@ type NSXv3Configuration struct {
 	ScrapScheduleSeconds int    `env:"SCRAP_SCHEDULE_SECONDS" envDefault:"0"`
 }
 
-
-
 // Init Loads NSXv3Configuration value from the OS environment variables and validate them
 func Init() NSXv3Configuration {
 
@@ -31,7 +29,7 @@ func Init() NSXv3Configuration {
 	}
 
 	// Variables that cannot be empty strings
-	variablesToCheck := map [string]string {
+	variablesToCheck := map[string]string{
 		"NSXV3_LOGIN_HOST": nsxv3Config.LoginHost,
 	}
 
