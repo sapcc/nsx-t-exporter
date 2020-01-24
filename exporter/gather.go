@@ -297,7 +297,6 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 						"query": []string{ // odata query
 							strings.Join([]string{
 								"resource_type:LogicalPort",
-								"status.status:UP",
 								"_exists_:resource_type",
 								"!resource_type:GenericPolicyRealizedResourceORDomain",
 								"!_exists_:nsx_id",
