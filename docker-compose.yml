@@ -8,17 +8,17 @@ services:
       - 9191
     ports:
       - 9191:9191
-    image: sapcc/nsxv3-exporter:latest 
+    image: nsx-exporter:latest 
     environment:
-      - NSXV3_LOGIN_HOST=<NSX-T Manager Node hostname or IP address>
-      - NSXV3_LOGIN_PORT=<NSX-T Manager Node port>
-      - NSXV3_LOGIN_USER=<NSX-T Manager Node login user>
-      - NSXV3_LOGIN_PASSWORD=<NSX-T Manager Node login password>
+      - NSXV3_LOGIN_HOST=nsx-floatin-ip.corp.local
+      - NSXV3_LOGIN_PORT=443
+      - NSXV3_LOGIN_USER=admin
+      - NSXV3_LOGIN_PASSWORD=VMwarensbu_1
       - NSXV3_REQUESTS_PER_SECOND=<NSX-T Manager Node requestes per second [<100]>
       - NSXV3_CONNECTION_POOL_SIZE=<NSX-T Manager Node connection pool size>
       - NSXV3_REQUEST_TIMEOUT_SECONDS=<NSX-T Manager request timeout in seconds>
-      - NSXV3_SUPPRESS_SSL_WORNINGS=<NSX-T Manager Node disables ssl host validattion>
-      - SCRAP_PORT=<The exporter scrap port>
+      - NSXV3_SUPPRESS_SSL_WORNINGS=true
+      - SCRAP_PORT=9191
       - SCRAP_SCHEDULE_SECONDS=<The exporter scrap NSX-T Manager schedule in seconds>
       - LOG_LEVEL=<NSX-T Exporter logging level.>
 

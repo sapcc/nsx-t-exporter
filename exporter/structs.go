@@ -22,6 +22,13 @@ type Nsxv3LogicalSwitchAdminStateData struct {
 	id               string
 }
 
+// Nsxv3LogicalPortOperationalStateData represent the current snapshot of metrics
+// for a logical port operational state
+type Nsxv3LogicalPortOperationalStateData struct {
+	operationalStateMetric float64
+	id                     string
+}
+
 // Nsxv3LogicalSwitchStateData represent the current snapshot of metrics
 // for a logical switch state
 type Nsxv3LogicalSwitchStateData struct {
@@ -42,7 +49,7 @@ type Nsxv3ManagementNodeData struct {
 	IP           string
 	Connectivity float64
 	CPUCores     float64
-	// Averadge load index [0] := 1min, [1] := 5min, [2] := 15min
+	// Average load index [0] := 1min, [1] := 5min, [2] := 15min
 	LoadAverage  [3]float64
 	MemoryUse    float64
 	MemoryTotal  float64
@@ -55,9 +62,9 @@ type Nsxv3ManagementNodeData struct {
 
 // Nsxv3ControlNodeData represent the current snapshot of metrics for a single control node
 type Nsxv3ControlNodeData struct {
-	IP                    string
-	Connectivity          float64
-	ManagmentConnectivity float64
+	IP                     string
+	Connectivity           float64
+	ManagementConnectivity float64
 }
 
 // Nsxv3TransportNodeData represent the current snapshot of metrics for a single transport node
@@ -69,16 +76,17 @@ type Nsxv3TransportNodeData struct {
 
 // Nsxv3Data represent the current snapshot of metrics
 type Nsxv3Data struct {
-	ClusterHost                     string
-	ClusterManagementStatus         float64
-	ClusterControlStatus            float64
-	ClusterOnlineNodes              float64
-	ClusterOfflineNodes             float64
-	ManagementNodes                 []Nsxv3ManagementNodeData
-	ControlNodes                    []Nsxv3ControlNodeData
-	TransportNodes                  []Nsxv3TransportNodeData
-	LogicalSwitchesAdminStates      []Nsxv3LogicalSwitchAdminStateData
-	LogicalSwitchesStates           []Nsxv3LogicalSwitchStateData
-	ExtractedActualValues           bool
-	LastSuccessfulDataFetch         float64
+	ClusterHost                  string
+	ClusterManagementStatus      float64
+	ClusterControlStatus         float64
+	ClusterOnlineNodes           float64
+	ClusterOfflineNodes          float64
+	ManagementNodes              []Nsxv3ManagementNodeData
+	ControlNodes                 []Nsxv3ControlNodeData
+	TransportNodes               []Nsxv3TransportNodeData
+	LogicalSwitchesAdminStates   []Nsxv3LogicalSwitchAdminStateData
+	LogicalSwitchesStates        []Nsxv3LogicalSwitchStateData
+	ExtractedActualValues        bool
+	LastSuccessfulDataFetch      float64
+	LogicalPortOperationalStates []Nsxv3LogicalPortOperationalStateData
 }
