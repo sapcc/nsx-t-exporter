@@ -180,6 +180,14 @@ func transportNodeStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, 
 	return next, nil
 }
 
+func transportNodesStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	data.TransportNodesState.UpCount = status.state["up_count"].(float64)
+	data.TransportNodesState.DegradedCount = status.state["degraded_count"].(float64)
+	data.TransportNodesState.DownCount = status.state["down_count"].(float64)
+	data.TransportNodesState.UnknownCount = status.state["unknown_count"].(float64)
+	return noCursor, nil
+}
+
 func logicalSwitchAdminStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	lswitches := status.state["results"].([]interface{})
 
@@ -286,6 +294,14 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 				URL:    &url.URL{Path: "/api/v1/transport-nodes/state"},
 			},
 		}
+	case TransportNodes:
+		return Nsxv3Resource{
+			kind: TransportNodes,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Path: "/api/v1/transport-nodes/status"},
+			},
+		}
 	case LogicalPort:
 		return Nsxv3Resource{
 			kind: LogicalPort,
@@ -323,6 +339,8 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 		return logicalSwitchStateHander(data, status)
 	case TransportNode:
 		return transportNodeStateHandler(data, status)
+	case TransportNodes:
+		return transportNodesStateHandler(data, status)
 	case LogicalPort:
 		return logicalPortsHandler(data, status)
 	}
@@ -340,6 +358,7 @@ func (e *Exporter) gather(data *Nsxv3Data) error {
 		getEndpointStatus(LogicalSwitchAdmin),
 		getEndpointStatus(LogicalSwitch),
 		getEndpointStatus(TransportNode),
+		getEndpointStatus(TransportNodes),
 		getEndpointStatus(LogicalPort),
 	}
 
