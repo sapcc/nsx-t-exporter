@@ -118,6 +118,30 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
 	)
 
+	APIMetrics["TransportNodesUp"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "transport_nodes", "up"),
+		"NSX-T transport nodes with state up",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
+	APIMetrics["TransportNodesDegraded"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "transport_nodes", "degraded"),
+		"NSX-T transport nodes with state degraded",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
+	APIMetrics["TransportNodesDown"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "transport_nodes", "down"),
+		"NSX-T transport nodes with state down",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
+	APIMetrics["TransportNodesUnknown"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "transport_nodes", "unknown"),
+		"NSX-T transport nodes with state unknown",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
 	APIMetrics["TransportNodeState"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "transport_node", "state"),
 		"NSX-T transport node state - SUCCESS=1, IN_PROGRESS=0, PENDING=-1, FAILED=-2, PARTIAL_SUCCESS=-3, ORPHANED=-4, UNKNOWN=-5",
@@ -179,11 +203,30 @@ func (e *Exporter) processMetrics(data *Nsxv3Data, ch chan<- prometheus.Metric) 
 		prometheus.GaugeValue,
 		data.ClusterOfflineNodes,
 		data.ClusterHost)
-
 	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["ManagementClusterLastSuccessfulConnection"],
 		prometheus.GaugeValue,
 		data.LastSuccessfulDataFetch,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["TransportNodesUp"],
+		prometheus.GaugeValue,
+		data.TransportNodesState.UpCount,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["TransportNodesDegraded"],
+		prometheus.GaugeValue,
+		data.TransportNodesState.DegradedCount,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["TransportNodesDown"],
+		prometheus.GaugeValue,
+		data.TransportNodesState.DownCount,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["TransportNodesUnknown"],
+		prometheus.GaugeValue,
+		data.TransportNodesState.UnknownCount,
 		data.ClusterHost)
 
 	for _, element := range data.ManagementNodes {

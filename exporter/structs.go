@@ -74,6 +74,14 @@ type Nsxv3TransportNodeData struct {
 	DeploymentState float64
 }
 
+// Nsxv3TransportNodesStateData represent the current snapshot of the transport nodes state
+type Nsxv3TransportNodesStateData struct {
+	UpCount       float64
+	DegradedCount float64
+	DownCount     float64
+	UnknownCount  float64
+}
+
 // Nsxv3Data represent the current snapshot of metrics
 type Nsxv3Data struct {
 	ClusterHost                  string
@@ -84,6 +92,7 @@ type Nsxv3Data struct {
 	ManagementNodes              []Nsxv3ManagementNodeData
 	ControlNodes                 []Nsxv3ControlNodeData
 	TransportNodes               []Nsxv3TransportNodeData
+	TransportNodesState          Nsxv3TransportNodesStateData
 	LogicalSwitchesAdminStates   []Nsxv3LogicalSwitchAdminStateData
 	LogicalSwitchesStates        []Nsxv3LogicalSwitchStateData
 	ExtractedActualValues        bool
