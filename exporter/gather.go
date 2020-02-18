@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -390,6 +391,7 @@ func (e *Exporter) gather(data *Nsxv3Data) error {
 	}
 
 	data.ExtractedActualValues = true
+	data.LastSuccessfulDataFetch = float64(time.Now().Unix())
 
 	log.Info("Data collection completed")
 	return nil
