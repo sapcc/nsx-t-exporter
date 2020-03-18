@@ -89,6 +89,7 @@ type Nsxv3Data struct {
 	ClusterControlStatus         float64
 	ClusterOnlineNodes           float64
 	ClusterOfflineNodes          float64
+	DatabaseStatus               float64
 	ManagementNodes              []Nsxv3ManagementNodeData
 	ControlNodes                 []Nsxv3ControlNodeData
 	TransportNodes               []Nsxv3TransportNodeData

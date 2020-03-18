@@ -36,13 +36,14 @@ type Nsxv3ResourceKind string
 
 // Nsxv3Resource resource kinds
 const (
-	ManagementCluster      Nsxv3ResourceKind = "ManagementCluster"
-	ManagementClusterNodes Nsxv3ResourceKind = "ManagementClusterNodes"
-	TransportNode          Nsxv3ResourceKind = "TransportNode"
-	TransportNodes         Nsxv3ResourceKind = "TransportNodes"
-	LogicalSwitchAdmin     Nsxv3ResourceKind = "LogicalSwitchAdmin"
-	LogicalSwitch          Nsxv3ResourceKind = "LogicalSwitch"
-	LogicalPort            Nsxv3ResourceKind = "LogicalPort"
+	ManagementCluster         Nsxv3ResourceKind = "ManagementCluster"
+	ManagementClusterNodes    Nsxv3ResourceKind = "ManagementClusterNodes"
+	ManagementClusterDatabase Nsxv3ResourceKind = "ManagementClusterDatabase"
+	TransportNode             Nsxv3ResourceKind = "TransportNode"
+	TransportNodes            Nsxv3ResourceKind = "TransportNodes"
+	LogicalSwitchAdmin        Nsxv3ResourceKind = "LogicalSwitchAdmin"
+	LogicalSwitch             Nsxv3ResourceKind = "LogicalSwitch"
+	LogicalPort               Nsxv3ResourceKind = "LogicalPort"
 )
 
 // Nsxv3Resource represents endpoint status snapshot

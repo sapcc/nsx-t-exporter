@@ -40,6 +40,12 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 		[]string{"nsxv3_manager_hostname"}, nil,
 	)
 
+	APIMetrics["ManagementDatabaseStatus"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "cluster_management_database", "status"),
+		"NSX-T management cluster database status - RUNNING=0, STOPPED=1",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
 	APIMetrics["ManagementNodeConnectivity"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "connectivity"),
 		"NSX-T management node connectivity - CONNECTED > 0, DISCONNECTED = 0, UNKNOWN < 0",
@@ -207,6 +213,11 @@ func (e *Exporter) processMetrics(data *Nsxv3Data, ch chan<- prometheus.Metric) 
 		e.APIMetrics["ManagementClusterLastSuccessfulConnection"],
 		prometheus.GaugeValue,
 		data.LastSuccessfulDataFetch,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["ManagementDatabaseStatus"],
+		prometheus.GaugeValue,
+		data.DatabaseStatus,
 		data.ClusterHost)
 	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["TransportNodesUp"],

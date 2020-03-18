@@ -19,6 +19,11 @@ var managementClusterStates = map[string]float64{
 	"UNKNOWN":      -3,
 }
 
+var managementClusterDatabaseStatus = map[string]float64{
+	"RUNNING": 0,
+	"STOPPED": 1,
+}
+
 var controlClusterStates = map[string]float64{
 	"STABLE":         1,
 	"NO_CONTROLLERS": 0,
@@ -154,6 +159,14 @@ func clusterNodesStatusHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, 
 	return noCursor, nil
 }
 
+func managementClusterDatabaseHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	state := status.state["runtime_state"].(string)
+
+	data.DatabaseStatus = managementClusterDatabaseStatus[strings.ToUpper(state)]
+
+	return noCursor, nil
+}
+
 func transportNodeStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	results := status.state["results"]
 	var nodes []interface{}
@@ -271,6 +284,14 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 				URL:    &url.URL{Path: "/api/v1/cluster/nodes/status"},
 			},
 		}
+	case ManagementClusterDatabase:
+		return Nsxv3Resource{
+			kind: ManagementClusterDatabase,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Path: "/api/v1/node/services/datastore/status"},
+			},
+		}
 	case LogicalSwitch:
 		return Nsxv3Resource{
 			kind: LogicalSwitch,
@@ -334,6 +355,8 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 		return clusterStatusHandler(data, status)
 	case ManagementClusterNodes:
 		return clusterNodesStatusHandler(data, status)
+	case ManagementClusterDatabase:
+		return managementClusterDatabaseHandler(data, status)
 	case LogicalSwitch:
 		return logicalSwitchAdminStateHander(data, status)
 	case LogicalSwitchAdmin:
@@ -356,6 +379,7 @@ func (e *Exporter) gather(data *Nsxv3Data) error {
 	endpoints := []Nsxv3Resource{
 		getEndpointStatus(ManagementCluster),
 		getEndpointStatus(ManagementClusterNodes),
+		getEndpointStatus(ManagementClusterDatabase),
 		getEndpointStatus(LogicalSwitchAdmin),
 		getEndpointStatus(LogicalSwitch),
 		getEndpointStatus(TransportNode),

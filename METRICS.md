@@ -1,4 +1,4 @@
-# Metrics
+<!-- # Metrics -->
 
 Below are an example of the metrics as exposed by this exporter (filteer by nsxv3 for NSX-T metrics).
 
@@ -108,6 +108,9 @@ nsxv3_cluster_management_online_nodes{nsxv3_manager_hostname="nsxm-l-01a.corp.lo
 # HELP nsxv3_cluster_management_status NSX-T management cluster status - STABLE=1, INITIALIZING=0, UNSTABLE=-1, DEGRADED=-2, UNKNOWN=-3
 # TYPE nsxv3_cluster_management_status gauge
 nsxv3_cluster_management_status{nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 1
+# HELP nsxv3_cluster_management_database_status NSX-T management cluster database status - RUNNING=0, STOPPED=1
+# TYPE nsxv3_cluster_management_database_status gauge
+nsxv3_cluster_management_database_status{nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 0
 # HELP nsxv3_control_node_connectivity NSX-T control node connectivity - CONNECTED=1, DISCONNECTED=0, UNKNOWN=-1
 # TYPE nsxv3_control_node_connectivity gauge
 nsxv3_control_node_connectivity{nsxv3_manager_hostname="nsxm-l-01a.corp.local",nsxv3_node_ip="192.168.50.1"} 1
