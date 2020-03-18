@@ -169,7 +169,7 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 	APIMetrics["LogicalPortOperationalState"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "logical_port", "operational_state"),
 		"NSX-T logical port operational state - UP=1, DOWN=0, UNKNOWN=-1",
-		[]string{"nsxv3_manager_hostname", "id"}, nil,
+		[]string{"nsxv3_manager_hostname", "id", "transport_node_id"}, nil,
 	)
 
 	APIMetrics["LogicalSwitchState"] = prometheus.NewDesc(
@@ -392,7 +392,7 @@ func (e *Exporter) processLogicalPortOperationalStateMetrics(host string, data *
 		e.APIMetrics["LogicalPortOperationalState"],
 		prometheus.GaugeValue,
 		data.operationalStateMetric,
-		host, data.id)
+		host, data.id, data.hostID)
 
 	return nil
 }

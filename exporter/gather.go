@@ -238,6 +238,7 @@ func logicalPortsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error)
 		port := logicalPort.(map[string]interface{})
 		logicalPortData := new(Nsxv3LogicalPortOperationalStateData)
 		logicalPortData.id = port["id"].(string)
+		logicalPortData.hostID = strings.Split(port["display_name"].(string), "@")[1] // Transport node ID is part of the name
 		logicalPortData.operationalStateMetric = logicalPortOperationalStates[port["status"].(map[string]interface{})["status"].(string)]
 		data.LogicalPortOperationalStates = append(data.LogicalPortOperationalStates, *logicalPortData)
 	}

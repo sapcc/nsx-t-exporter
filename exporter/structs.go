@@ -27,6 +27,7 @@ type Nsxv3LogicalSwitchAdminStateData struct {
 type Nsxv3LogicalPortOperationalStateData struct {
 	operationalStateMetric float64
 	id                     string
+	hostID                 string // Transport Node ID
 }
 
 // Nsxv3LogicalSwitchStateData represent the current snapshot of metrics
