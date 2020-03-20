@@ -1,4 +1,4 @@
-# Metrics
+<!-- # Metrics -->
 
 Below are an example of the metrics as exposed by this exporter (filteer by nsxv3 for NSX-T metrics).
 
@@ -108,6 +108,9 @@ nsxv3_cluster_management_online_nodes{nsxv3_manager_hostname="nsxm-l-01a.corp.lo
 # HELP nsxv3_cluster_management_status NSX-T management cluster status - STABLE=1, INITIALIZING=0, UNSTABLE=-1, DEGRADED=-2, UNKNOWN=-3
 # TYPE nsxv3_cluster_management_status gauge
 nsxv3_cluster_management_status{nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 1
+# HELP nsxv3_cluster_management_database_status NSX-T management cluster database status - RUNNING=0, STOPPED=1
+# TYPE nsxv3_cluster_management_database_status gauge
+nsxv3_cluster_management_database_status{nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 0
 # HELP nsxv3_control_node_connectivity NSX-T control node connectivity - CONNECTED=1, DISCONNECTED=0, UNKNOWN=-1
 # TYPE nsxv3_control_node_connectivity gauge
 nsxv3_control_node_connectivity{nsxv3_manager_hostname="nsxm-l-01a.corp.local",nsxv3_node_ip="192.168.50.1"} 1
@@ -116,8 +119,7 @@ nsxv3_control_node_connectivity{nsxv3_manager_hostname="nsxm-l-01a.corp.local",n
 nsxv3_control_node_management_connectivity{nsxv3_manager_hostname="nsxm-l-01a.corp.local",nsxv3_node_ip="192.168.50.1"} 1
 # HELP nsxv3_logical_port_operational_state NSX-T logical port operational state - UP=1, DOWN=0, UNKNOWN=-1
 # TYPE nsxv3_logical_port_operational_state gauge
-nsxv3_logical_port_operational_state{id="3ebcf325-aa6e-428c-9099-8ae960d2bbb8",nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 1
-nsxv3_logical_port_operational_state{id="bed83365-1aca-431c-85c8-ab40e10e0a6d",nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 1
+nsxv3_logical_port_operational_state{id="df227f58-1dae-4a3a-9a0b-ae2c6c68250d",nsxv3_manager_hostname="nsxm-l-01a.corp.local",transport_node_id="1845a490-7aae-4a6b-915f-d587e3c19a72"} 1
 # HELP nsxv3_logical_switch_admin_state NSX-T logical switch admin state - UP=1, DOWN=0
 # TYPE nsxv3_logical_switch_admin_state gauge
 nsxv3_logical_switch_admin_state{id="3517fcb7-4723-432f-b55e-49632f809632",name="openstack-tz-3200",nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 1
