@@ -178,6 +178,36 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 		[]string{"nsxv3_manager_hostname", "id"}, nil,
 	)
 
+	APIMetrics["SchedulerTotalComplete"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "scheduler", "total_complete"),
+		"NSX-T Scheduler total completed jobs",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
+	APIMetrics["SchedulerTotalExecuting"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "scheduler", "total_executing"),
+		"NSX-T Scheduler total executing jobs",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
+	APIMetrics["SchedulerTotalQueued"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "scheduler", "total_queued"),
+		"NSX-T Scheduler total queued jobs",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
+	APIMetrics["SchedulerTotalScheduled"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "scheduler", "total_scheduled"),
+		"NSX-T Scheduler total scheduled jobs",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
+	APIMetrics["SchedulerTotalSuspended"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "scheduler", "total_suspended"),
+		"NSX-T Scheduler total suspended jobs",
+		[]string{"nsxv3_manager_hostname"}, nil,
+	)
+
 	return APIMetrics
 }
 
@@ -238,6 +268,31 @@ func (e *Exporter) processMetrics(data *Nsxv3Data, ch chan<- prometheus.Metric) 
 		e.APIMetrics["TransportNodesUnknown"],
 		prometheus.GaugeValue,
 		data.TransportNodesState.UnknownCount,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["SchedulerTotalComplete"],
+		prometheus.GaugeValue,
+		data.Scheduler.TotalComplete,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["SchedulerTotalExecuting"],
+		prometheus.GaugeValue,
+		data.Scheduler.TotalExecuting,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["SchedulerTotalQueued"],
+		prometheus.GaugeValue,
+		data.Scheduler.TotalQueued,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["SchedulerTotalScheduled"],
+		prometheus.GaugeValue,
+		data.Scheduler.TotalScheduled,
+		data.ClusterHost)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["SchedulerTotalSuspended"],
+		prometheus.GaugeValue,
+		data.Scheduler.TotalSuspended,
 		data.ClusterHost)
 
 	for _, element := range data.ManagementNodes {

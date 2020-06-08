@@ -83,6 +83,14 @@ type Nsxv3TransportNodesStateData struct {
 	UnknownCount  float64
 }
 
+type Nsxv3ActivityFrameworkSchedulerData struct {
+	TotalQueued    float64
+	TotalScheduled float64
+	TotalExecuting float64
+	TotalSuspended float64
+	TotalComplete  float64
+}
+
 // Nsxv3Data represent the current snapshot of metrics
 type Nsxv3Data struct {
 	ClusterHost                  string
@@ -100,4 +108,5 @@ type Nsxv3Data struct {
 	ExtractedActualValues        bool
 	LastSuccessfulDataFetch      float64
 	LogicalPortOperationalStates []Nsxv3LogicalPortOperationalStateData
+	Scheduler                    Nsxv3ActivityFrameworkSchedulerData
 }

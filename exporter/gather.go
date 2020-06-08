@@ -238,7 +238,8 @@ func logicalPortsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error)
 		port := logicalPort.(map[string]interface{})
 		logicalPortData := new(Nsxv3LogicalPortOperationalStateData)
 		logicalPortData.id = port["id"].(string)
-		logicalPortData.hostID = strings.Split(port["display_name"].(string), "@")[1] // Transport node ID is part of the name
+		splittedPortName := strings.Split(port["display_name"].(string), "@")
+		logicalPortData.hostID = splittedPortName[len(splittedPortName)-1] // Transport node ID is part of the name
 		logicalPortData.operationalStateMetric = logicalPortOperationalStates[port["status"].(map[string]interface{})["status"].(string)]
 		data.LogicalPortOperationalStates = append(data.LogicalPortOperationalStates, *logicalPortData)
 	}
@@ -265,6 +266,15 @@ func logicalSwitchStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, e
 		data.LogicalSwitchesStates = append(data.LogicalSwitchesStates, *lswitchData)
 	}
 	return next, nil
+}
+
+func activityFramworkStatisticsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	data.Scheduler.TotalQueued = status.state["total_queued"].(float64)
+	data.Scheduler.TotalScheduled = status.state["total_scheduled"].(float64)
+	data.Scheduler.TotalExecuting = status.state["total_executing"].(float64)
+	data.Scheduler.TotalSuspended = status.state["total_suspended"].(float64)
+	data.Scheduler.TotalComplete = status.state["total_complete"].(float64)
+	return noCursor, nil
 }
 
 func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
@@ -346,6 +356,14 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 				},
 			},
 		}
+	case ActivityFrameworkStatistics:
+		return Nsxv3Resource{
+			kind: ActivityFrameworkStatistics,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Path: "/api/v1/operational/activityframework/scheduler/statistics"},
+			},
+		}
 	}
 	return Nsxv3Resource{}
 }
@@ -368,6 +386,8 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 		return transportNodesStateHandler(data, status)
 	case LogicalPort:
 		return logicalPortsHandler(data, status)
+	case ActivityFrameworkStatistics:
+		return activityFramworkStatisticsHandler(data, status)
 	}
 	return noCursor, fmt.Errorf("Unsupported Endpoint Type %v", status.kind)
 }
@@ -386,6 +406,7 @@ func (e *Exporter) gather(data *Nsxv3Data) error {
 		getEndpointStatus(TransportNode),
 		getEndpointStatus(TransportNodes),
 		getEndpointStatus(LogicalPort),
+		getEndpointStatus(ActivityFrameworkStatistics),
 	}
 
 	chSize := len(endpoints)
