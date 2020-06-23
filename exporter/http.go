@@ -39,6 +39,7 @@ const (
 	ManagementCluster         Nsxv3ResourceKind = "ManagementCluster"
 	ManagementClusterNodes    Nsxv3ResourceKind = "ManagementClusterNodes"
 	ManagementClusterDatabase Nsxv3ResourceKind = "ManagementClusterDatabase"
+	ManagerNodeFirewall       Nsxv3ResourceKind = "ManagerNodeFirewall"
 	TransportNode             Nsxv3ResourceKind = "TransportNode"
 	TransportNodes            Nsxv3ResourceKind = "TransportNodes"
 	LogicalSwitchAdmin        Nsxv3ResourceKind = "LogicalSwitchAdmin"
@@ -120,7 +121,9 @@ func (c *Nsxv3Client) login(force bool) error {
 func (c *Nsxv3Client) updateEndpointStatus(status *Nsxv3Resource) {
 	c.login(false)
 
-	status.request.URL.Host = c.config.LoginHost
+	if status.request.URL.Host == "" {
+		status.request.URL.Host = c.config.LoginHost
+	}
 	status.request.URL.Scheme = "https"
 	status.request.Header = http.Header{}
 	status.request.Header.Set("Accept", httpHeaderAcceptJSON)

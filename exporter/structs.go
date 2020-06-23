@@ -51,14 +51,16 @@ type Nsxv3ManagementNodeData struct {
 	Connectivity float64
 	CPUCores     float64
 	// Average load index [0] := 1min, [1] := 5min, [2] := 15min
-	LoadAverage  [3]float64
-	MemoryUse    float64
-	MemoryTotal  float64
-	MemoryCached float64
-	SwapUse      float64
-	SwapTotal    float64
-	Storage      []Nsxv3NodeStorageData
-	Version      string
+	LoadAverage       [3]float64
+	MemoryUse         float64
+	MemoryTotal       float64
+	MemoryCached      float64
+	SwapUse           float64
+	SwapTotal         float64
+	Storage           []Nsxv3NodeStorageData
+	Version           string
+	L3DFWSectionCount float64
+	L3DFWRuleCount    float64
 }
 
 // Nsxv3ControlNodeData represent the current snapshot of metrics for a single control node

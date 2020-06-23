@@ -167,6 +167,31 @@ func managementClusterDatabaseHandler(data *Nsxv3Data, status *Nsxv3Resource) (s
 	return noCursor, nil
 }
 
+func managerNodeFirewallHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	results := status.state["sections_summary"]
+	var sectionTypes []interface{}
+
+	if results != nil {
+		sectionTypes = results.([]interface{})
+	}
+
+	nodes := map[string]int{}
+	for index, element := range data.ManagementNodes {
+		nodes[element.IP] = index
+	}
+
+	for _, section := range sectionTypes {
+		sectionType := section.(map[string]interface{})
+		if sectionType["section_type"].(string) == "L3DFW" {
+			index := nodes[status.request.URL.Host]
+			data.ManagementNodes[index].L3DFWSectionCount = sectionType["section_count"].(float64)
+			data.ManagementNodes[index].L3DFWRuleCount = sectionType["rule_count"].(float64)
+		}
+	}
+
+	return noCursor, nil
+}
+
 func transportNodeStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	results := status.state["results"]
 	var nodes []interface{}
@@ -267,14 +292,15 @@ func logicalSwitchStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, e
 	return next, nil
 }
 
-func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
+// endpointHost could be Node FQDN, IP or empty string for NSX-T Load Balancer FQDN/IP
+func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string) Nsxv3Resource {
 	switch id := endpointStatusType; id {
 	case ManagementCluster:
 		return Nsxv3Resource{
 			kind: endpointStatusType,
 			request: &http.Request{
 				Method: "GET",
-				URL:    &url.URL{Path: "/api/v1/cluster/status"},
+				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/cluster/status"},
 			},
 		}
 	case ManagementClusterNodes:
@@ -282,7 +308,15 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 			kind: ManagementClusterNodes,
 			request: &http.Request{
 				Method: "GET",
-				URL:    &url.URL{Path: "/api/v1/cluster/nodes/status"},
+				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/cluster/nodes/status"},
+			},
+		}
+	case ManagerNodeFirewall:
+		return Nsxv3Resource{
+			kind: ManagerNodeFirewall,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/firewall/sections/summary"},
 			},
 		}
 	case ManagementClusterDatabase:
@@ -290,7 +324,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 			kind: ManagementClusterDatabase,
 			request: &http.Request{
 				Method: "GET",
-				URL:    &url.URL{Path: "/api/v1/node/services/datastore/status"},
+				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/node/services/datastore/status"},
 			},
 		}
 	case LogicalSwitch:
@@ -298,7 +332,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 			kind: LogicalSwitch,
 			request: &http.Request{
 				Method: "GET",
-				URL:    &url.URL{Path: "/api/v1/logical-switches"},
+				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/logical-switches"},
 			},
 		}
 	case LogicalSwitchAdmin:
@@ -306,7 +340,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 			kind: LogicalSwitchAdmin,
 			request: &http.Request{
 				Method: "GET",
-				URL:    &url.URL{Path: "/api/v1/logical-switches/state"},
+				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/logical-switches/state"},
 			},
 		}
 	case TransportNode:
@@ -314,7 +348,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 			kind: TransportNode,
 			request: &http.Request{
 				Method: "GET",
-				URL:    &url.URL{Path: "/api/v1/transport-nodes/state"},
+				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/transport-nodes/state"},
 			},
 		}
 	case TransportNodes:
@@ -322,7 +356,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 			kind: TransportNodes,
 			request: &http.Request{
 				Method: "GET",
-				URL:    &url.URL{Path: "/api/v1/transport-nodes/status"},
+				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/transport-nodes/status"},
 			},
 		}
 	case LogicalPort:
@@ -331,6 +365,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind) Nsxv3Resource {
 			request: &http.Request{
 				Method: "GET",
 				URL: &url.URL{
+					Host: endpointHost,
 					Path: "/policy/api/v1/search",
 					RawQuery: url.Values{
 						"query": []string{ // odata query
@@ -358,6 +393,8 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 		return clusterNodesStatusHandler(data, status)
 	case ManagementClusterDatabase:
 		return managementClusterDatabaseHandler(data, status)
+	case ManagerNodeFirewall:
+		return managerNodeFirewallHandler(data, status)
 	case LogicalSwitch:
 		return logicalSwitchAdminStateHander(data, status)
 	case LogicalSwitchAdmin:
@@ -372,21 +409,8 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	return noCursor, fmt.Errorf("Unsupported Endpoint Type %v", status.kind)
 }
 
-func (e *Exporter) gather(data *Nsxv3Data) error {
-	log.Info("Data collection started")
-	data.ClusterHost = e.NSXv3Configuration.LoginHost
+func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error {
 	client := GetClient(e.NSXv3Configuration)
-
-	endpoints := []Nsxv3Resource{
-		getEndpointStatus(ManagementCluster),
-		getEndpointStatus(ManagementClusterNodes),
-		getEndpointStatus(ManagementClusterDatabase),
-		getEndpointStatus(LogicalSwitchAdmin),
-		getEndpointStatus(LogicalSwitch),
-		getEndpointStatus(TransportNode),
-		getEndpointStatus(TransportNodes),
-		getEndpointStatus(LogicalPort),
-	}
 
 	chSize := len(endpoints)
 
@@ -415,6 +439,43 @@ func (e *Exporter) gather(data *Nsxv3Data) error {
 		return e
 	}
 
+	return nil
+}
+
+func (e *Exporter) gather(data *Nsxv3Data) error {
+	log.Info("Data collection started")
+	data.ClusterHost = e.NSXv3Configuration.LoginHost
+
+	var err error
+
+	err = e.gatherWave(
+		data,
+		[]Nsxv3Resource{
+			getEndpointStatus(ManagementCluster, ""),
+			getEndpointStatus(ManagementClusterNodes, ""),
+			getEndpointStatus(ManagementClusterDatabase, ""),
+			getEndpointStatus(LogicalSwitchAdmin, ""),
+			getEndpointStatus(LogicalSwitch, ""),
+			getEndpointStatus(TransportNode, ""),
+			getEndpointStatus(TransportNodes, ""),
+			getEndpointStatus(LogicalPort, ""),
+		})
+
+	if err != nil {
+		return err
+	}
+
+	endpoints := []Nsxv3Resource{}
+	for _, element := range data.ManagementNodes {
+		endpoints = append(endpoints, getEndpointStatus(ManagerNodeFirewall, element.IP))
+	}
+
+	err = e.gatherWave(data, endpoints)
+
+	if err != nil {
+		return err
+	}
+
 	data.ExtractedActualValues = true
 	data.LastSuccessfulDataFetch = float64(time.Now().Unix())
 
@@ -438,7 +499,7 @@ func (e *Exporter) updateData(data *Nsxv3Data, client *Nsxv3Client, status *Nsxv
 			return
 		}
 
-		nextStatus := getEndpointStatus(status.kind)
+		nextStatus := getEndpointStatus(status.kind, status.request.URL.Host)
 
 		query, _ := url.ParseQuery(nextStatus.request.URL.RawQuery)
 		query.Add("cursor", cursor)

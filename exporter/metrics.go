@@ -112,6 +112,18 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip", "filesystem"}, nil,
 	)
 
+	APIMetrics["ManagerNodeFirewallSectionCount"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "management_node_firewall", "section_count"),
+		"NSX-T management node firewall section count",
+		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+	)
+
+	APIMetrics["ManagerNodeFirewallRuleCount"] = prometheus.NewDesc(
+		prometheus.BuildFQName("nsxv3", "management_node_firewall", "rule_count"),
+		"NSX-T management node firewall rule count",
+		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+	)
+
 	APIMetrics["ControlNodeConnectivity"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "control_node", "connectivity"),
 		"NSX-T control node connectivity - CONNECTED=1, DISCONNECTED=0, UNKNOWN=-1",
@@ -324,6 +336,16 @@ func (e *Exporter) processManagementNodeMetrics(host string, data *Nsxv3Manageme
 		e.APIMetrics["ManagementNodeSwapTotal"],
 		prometheus.GaugeValue,
 		data.SwapTotal,
+		host, data.IP)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["ManagerNodeFirewallSectionCount"],
+		prometheus.GaugeValue,
+		data.L3DFWSectionCount,
+		host, data.IP)
+	ch <- prometheus.MustNewConstMetric(
+		e.APIMetrics["ManagerNodeFirewallRuleCount"],
+		prometheus.GaugeValue,
+		data.L3DFWRuleCount,
 		host, data.IP)
 
 	for _, element := range data.Storage {
