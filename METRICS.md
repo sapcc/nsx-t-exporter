@@ -225,4 +225,19 @@ promhttp_metric_handler_requests_in_flight 1
 promhttp_metric_handler_requests_total{code="200"} 0
 promhttp_metric_handler_requests_total{code="500"} 0
 promhttp_metric_handler_requests_total{code="503"} 0
+# HELP nsxv3_scheduler_total_complete NSX-T Scheduler total completed jobs
+# TYPE nsxv3_scheduler_total_complete gauge
+nsxv3_scheduler_total_complete{nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 3
+# HELP nsxv3_scheduler_total_executing NSX-T Scheduler total executing jobs
+# TYPE nsxv3_scheduler_total_executing gauge
+nsxv3_scheduler_total_executing{nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 0
+# HELP nsxv3_scheduler_total_queued NSX-T Scheduler total queued jobs
+# TYPE nsxv3_scheduler_total_queued gauge
+nsxv3_scheduler_total_queued{nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 0
+# HELP nsxv3_scheduler_total_scheduled NSX-T Scheduler total scheduled jobs
+# TYPE nsxv3_scheduler_total_scheduled gauge
+nsxv3_scheduler_total_scheduled{nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 0
+# HELP nsxv3_scheduler_total_suspended NSX-T Scheduler total suspended jobs
+# TYPE nsxv3_scheduler_total_suspended gauge
+nsxv3_scheduler_total_suspended{nsxv3_manager_hostname="nsxm-l-01a.corp.local"} 0
 ```
