@@ -15,6 +15,7 @@ import (
 	"golang.org/x/time/rate"
 
 	nsxv3config "github.com/sapcc/nsx-t-exporter/config"
+	log "github.com/sirupsen/logrus"
 )
 
 const pathCreateSession = "/api/session/create"
@@ -39,6 +40,7 @@ const (
 	ManagementCluster           Nsxv3ResourceKind = "ManagementCluster"
 	ManagementClusterNodes      Nsxv3ResourceKind = "ManagementClusterNodes"
 	ManagementClusterDatabase   Nsxv3ResourceKind = "ManagementClusterDatabase"
+	ManagerNodeFirewall         Nsxv3ResourceKind = "ManagerNodeFirewall"
 	TransportNode               Nsxv3ResourceKind = "TransportNode"
 	TransportNodes              Nsxv3ResourceKind = "TransportNodes"
 	LogicalSwitchAdmin          Nsxv3ResourceKind = "LogicalSwitchAdmin"
@@ -121,7 +123,9 @@ func (c *Nsxv3Client) login(force bool) error {
 func (c *Nsxv3Client) updateEndpointStatus(status *Nsxv3Resource) {
 	c.login(false)
 
-	status.request.URL.Host = c.config.LoginHost
+	if status.request.URL.Host == "" {
+		status.request.URL.Host = c.config.LoginHost
+	}
 	status.request.URL.Scheme = "https"
 	status.request.Header = http.Header{}
 	status.request.Header.Set("Accept", httpHeaderAcceptJSON)
@@ -158,8 +162,16 @@ func (c *Nsxv3Client) executeRequest(req *http.Request) (*http.Response, error) 
 	var childContext context.Context
 
 	if c.limiter.Allow() == false {
-		childContext, cancel = context.WithTimeout(c.context, 1*time.Second)
-		c.limiter.Wait(childContext)
+		childContext, cancel = context.WithTimeout(
+			c.context,
+			time.Duration(c.config.RequestsPerSecondTimeout)*time.Second)
+
+		err := c.limiter.Wait(childContext)
+		if err != nil && cancel != nil {
+			log.Error(err)
+			cancel()
+			return nil, err
+		}
 	}
 
 	resp, err := c.client.Do(req)
