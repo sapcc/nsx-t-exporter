@@ -430,13 +430,26 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 }
 
 func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error {
-	client := GetClient(e.NSXv3Configuration)
+	clients := map[string]Nsxv3Client{
+		e.NSXv3Configuration.LoginHost: GetClient(e.NSXv3Configuration),
+	}
 
 	chSize := len(endpoints)
 
 	ch := make(chan error, chSize)
 
 	for id := range endpoints {
+		host := endpoints[id].request.URL.Host
+		if host == "" {
+			host = e.NSXv3Configuration.LoginHost
+		}
+		client, ok := clients[host]
+		if !ok {
+			config := e.NSXv3Configuration
+			config.LoginHost = host
+			client = GetClient(config)
+			clients[host] = client
+		}
 		go e.updateData(data, &client, &endpoints[id], ch)
 	}
 
