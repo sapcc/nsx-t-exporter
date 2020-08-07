@@ -74,6 +74,15 @@ var (
 	endpoints []Nsxv3Resource
 )
 
+func getNodeIndexByIP(data *Nsxv3Data, ip string) int {
+	for index, element := range data.ManagementNodes {
+		if element.IP == ip {
+			return index
+		}
+	}
+	return -1
+}
+
 func clusterStatusHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	managementClusterInfo := status.state["mgmt_cluster_status"].(map[string]interface{})
 
@@ -175,19 +184,21 @@ func managerNodeFirewallHandler(data *Nsxv3Data, status *Nsxv3Resource) (string,
 		sectionTypes = results.([]interface{})
 	}
 
-	nodes := map[string]int{}
-	for index, element := range data.ManagementNodes {
-		nodes[element.IP] = index
-	}
-
 	for _, section := range sectionTypes {
 		sectionType := section.(map[string]interface{})
 		if sectionType["section_type"].(string) == "L3DFW" {
-			index := nodes[status.request.URL.Host]
+			index := getNodeIndexByIP(data, status.request.URL.Host)
 			data.ManagementNodes[index].L3DFWSectionCount = sectionType["section_count"].(float64)
 			data.ManagementNodes[index].L3DFWRuleCount = sectionType["rule_count"].(float64)
 		}
 	}
+
+	return noCursor, nil
+}
+
+func managerNodeFirewallSectionsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+	index := getNodeIndexByIP(data, status.request.URL.Host)
+	data.ManagementNodes[index].TotalSectionCount = status.state["result_count"].(float64)
 
 	return noCursor, nil
 }
@@ -329,6 +340,14 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/firewall/sections/summary"},
 			},
 		}
+	case ManagerNodeFirewallSections:
+		return Nsxv3Resource{
+			kind: ManagerNodeFirewallSections,
+			request: &http.Request{
+				Method: "GET",
+				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/firewall/sections"},
+			},
+		}
 	case ManagementClusterDatabase:
 		return Nsxv3Resource{
 			kind: ManagementClusterDatabase,
@@ -413,6 +432,8 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 		return managementClusterDatabaseHandler(data, status)
 	case ManagerNodeFirewall:
 		return managerNodeFirewallHandler(data, status)
+	case ManagerNodeFirewallSections:
+		return managerNodeFirewallSectionsHandler(data, status)
 	case LogicalSwitch:
 		return logicalSwitchAdminStateHander(data, status)
 	case LogicalSwitchAdmin:
@@ -501,7 +522,9 @@ func (e *Exporter) gather(data *Nsxv3Data) error {
 
 	endpoints := []Nsxv3Resource{}
 	for _, element := range data.ManagementNodes {
-		endpoints = append(endpoints, getEndpointStatus(ManagerNodeFirewall, element.IP))
+		endpoints = append(endpoints,
+			getEndpointStatus(ManagerNodeFirewall, element.IP),
+			getEndpointStatus(ManagerNodeFirewallSections, element.IP))
 	}
 
 	err = e.gatherWave(data, endpoints)

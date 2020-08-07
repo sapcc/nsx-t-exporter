@@ -140,6 +140,9 @@ nsxv3_management_node_firewall_rule_count{nsxv3_manager_hostname="nsxm-l-01a.cor
 # HELP nsxv3_management_node_firewall_section_count NSX-T management node firewall section count
 # TYPE nsxv3_management_node_firewall_section_count gauge
 nsxv3_management_node_firewall_section_count{nsxv3_manager_hostname="nsxm-l-01a.corp.local",nsxv3_node_ip="192.168.50.1"} 1822
+# HELP nsxv3_management_node_firewall_total_section_count NSX-T management node firewall all sections type count
+# TYPE nsxv3_management_node_firewall_total_section_count gauge
+nsxv3_management_node_firewall_total_section_count{nsxv3_manager_hostname="nsxm-l-01a.corp.local",nsxv3_node_ip="192.168.50.1"} 14
 # HELP nsxv3_management_node_load_average NSX-T management node average load
 # TYPE nsxv3_management_node_load_average gauge
 nsxv3_management_node_load_average{minutes="1",nsxv3_manager_hostname="nsxm-l-01a.corp.local",nsxv3_node_ip="192.168.50.1"} 8.79
