@@ -59,6 +59,7 @@ type Nsxv3ManagementNodeData struct {
 	SwapTotal         float64
 	Storage           []Nsxv3NodeStorageData
 	Version           string
+	TotalSectionCount float64
 	L3DFWSectionCount float64
 	L3DFWRuleCount    float64
 }

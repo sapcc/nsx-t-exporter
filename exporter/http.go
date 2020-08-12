@@ -41,6 +41,7 @@ const (
 	ManagementClusterNodes      Nsxv3ResourceKind = "ManagementClusterNodes"
 	ManagementClusterDatabase   Nsxv3ResourceKind = "ManagementClusterDatabase"
 	ManagerNodeFirewall         Nsxv3ResourceKind = "ManagerNodeFirewall"
+	ManagerNodeFirewallSections Nsxv3ResourceKind = "ManagerNodeFirewallSections"
 	TransportNode               Nsxv3ResourceKind = "TransportNode"
 	TransportNodes              Nsxv3ResourceKind = "TransportNodes"
 	LogicalSwitchAdmin          Nsxv3ResourceKind = "LogicalSwitchAdmin"
