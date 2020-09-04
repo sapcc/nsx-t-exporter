@@ -12,6 +12,7 @@ RUN go get \
  && go build -o /bin/main
 
 FROM alpine:3.6
+LABEL source_repository="https://github.com/sapcc/nsx-t-exporter"
 
 RUN apk --no-cache add ca-certificates \
  && addgroup nsxv3exporter \
