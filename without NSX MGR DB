@@ -1,0 +1,2 @@
+Update of the code
+Removing the ref to NSX Management DB creating an issue in NSX-T environment due to the fact the API call is not supported in an On Prem NSX Deployment. 
