@@ -5,7 +5,7 @@ go 1.17
 require (
 	github.com/caarlos0/env v3.5.0+incompatible
 	github.com/fatih/structs v1.1.0
-	github.com/prometheus/client_golang v1.12.1
+	github.com/prometheus/client_golang v1.12.2
 	github.com/sirupsen/logrus v1.8.1
 	golang.org/x/time v0.0.0-20220224211638-0e9765cccd65
 )
