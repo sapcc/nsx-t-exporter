@@ -1,4 +1,4 @@
-FROM golang:1.18-alpine as build
+FROM golang:1.23-alpine as build
 LABEL maintainer "SAP"
 
 RUN apk --no-cache add ca-certificates \
@@ -11,7 +11,7 @@ RUN go get \
  && go test ./... \
  && go build -o /bin/main
 
-FROM alpine:3.16
+FROM alpine:3.20
 LABEL source_repository="https://github.com/sapcc/nsx-t-exporter"
 
 RUN apk --no-cache add ca-certificates \
