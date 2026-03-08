@@ -1,13 +1,13 @@
 module github.com/sapcc/nsx-t-exporter
 
-go 1.17
+go 1.25.0
 
 require (
 	github.com/caarlos0/env/v6 v6.9.3
 	github.com/fatih/structs v1.1.0
 	github.com/prometheus/client_golang v1.20.3
 	github.com/sirupsen/logrus v1.8.1
-	golang.org/x/time v0.6.0
+	golang.org/x/time v0.15.0
 )
 
 require (
