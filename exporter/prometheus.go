@@ -1,6 +1,8 @@
 package exporter
 
 import (
+	"context"
+
 	"github.com/prometheus/client_golang/prometheus"
 	log "github.com/sirupsen/logrus"
 )
@@ -14,8 +16,9 @@ func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
 
 // CollectAsync - Asynchronously scraps the API and stores into struct
 func (e *Exporter) CollectAsync() {
+	ctx := context.Background()
 	data := Nsxv3Data{}
-	err := e.gather(&data)
+	err := e.gather(ctx, &data)
 
 	// in case of error, keep the previously acquired data (cache)
 	// otherwise update the existing cache

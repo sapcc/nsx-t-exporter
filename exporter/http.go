@@ -30,7 +30,6 @@ type Nsxv3Client struct {
 	cookie  string
 	token   string
 	limiter *rate.Limiter
-	context context.Context
 }
 
 // Nsxv3ResourceKind represents Nsxv3Resource type
@@ -83,12 +82,11 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 			Transport: netTransport,
 		},
 		limiter: rate.NewLimiter(rate.Limit(c.RequestsPerSecond), 1),
-		context: context.Background(),
 	}
 }
 
 // login to NSXv3 manager
-func (c *Nsxv3Client) login(force bool) error {
+func (c *Nsxv3Client) login(ctx context.Context, force bool) error {
 	if !force && (c.cookie != "" || c.token != "") {
 		return nil
 	}
@@ -108,7 +106,7 @@ func (c *Nsxv3Client) login(force bool) error {
 
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := c.executeRequest(req)
+	resp, err := c.executeRequest(ctx, req)
 
 	if err != nil {
 		return err
@@ -121,8 +119,8 @@ func (c *Nsxv3Client) login(force bool) error {
 }
 
 // AsyncGetRequest executes http get requests in an async mode
-func (c *Nsxv3Client) updateEndpointStatus(status *Nsxv3Resource) {
-	if err := c.login(false); err != nil {
+func (c *Nsxv3Client) updateEndpointStatus(ctx context.Context, status *Nsxv3Resource) {
+	if err := c.login(ctx, false); err != nil {
 		status.err = err
 		return
 	}
@@ -137,7 +135,7 @@ func (c *Nsxv3Client) updateEndpointStatus(status *Nsxv3Resource) {
 	status.request.Header.Set("Cookie", c.cookie)
 	status.request.Header.Set("X-XSRF-TOKEN", c.token)
 
-	status.response, status.err = c.executeRequest(status.request)
+	status.response, status.err = c.executeRequest(ctx, status.request)
 	defer status.response.Body.Close()
 
 	if status.err != nil {
@@ -160,13 +158,13 @@ func (c *Nsxv3Client) updateEndpointStatus(status *Nsxv3Resource) {
 	status.err = json.Unmarshal(body, &status.state)
 }
 
-func (c *Nsxv3Client) executeRequest(req *http.Request) (*http.Response, error) {
+func (c *Nsxv3Client) executeRequest(ctx context.Context, req *http.Request) (*http.Response, error) {
 	var cancel context.CancelFunc
 	var childContext context.Context
 
 	if !c.limiter.Allow() {
 		childContext, cancel = context.WithTimeout(
-			c.context,
+			ctx,
 			time.Duration(c.config.RequestsPerSecondTimeout)*time.Second)
 
 		err := c.limiter.Wait(childContext)
