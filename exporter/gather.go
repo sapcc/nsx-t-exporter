@@ -65,10 +65,6 @@ var logicalPortOperationalStates = map[string]float64{
 
 var noCursor = ""
 
-var (
-	endpoints []Nsxv3Resource
-)
-
 func getNodeIndexByIP(data *Nsxv3Data, ip string) int {
 	for index, element := range data.ManagementNodes {
 		if element.IP == ip {
@@ -79,39 +75,39 @@ func getNodeIndexByIP(data *Nsxv3Data, ip string) int {
 }
 
 func clusterStatusHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
-	managementClusterInfo := status.state["mgmt_cluster_status"].(map[string]interface{})
+	managementClusterInfo := status.state["mgmt_cluster_status"].(map[string]any)
 
 	data.ClusterManagementStatus = managementClusterStates[managementClusterInfo["status"].(string)]
 	data.ClusterControlStatus = controlClusterStates[managementClusterInfo["status"].(string)]
 
 	if onlineNodes, ok := managementClusterInfo["online_nodes"]; ok {
-		data.ClusterOnlineNodes = float64(len(onlineNodes.([]interface{})))
+		data.ClusterOnlineNodes = float64(len(onlineNodes.([]any)))
 	}
 	if offlineNodes, ok := managementClusterInfo["offline_nodes"]; ok {
-		data.ClusterOfflineNodes = float64(len(offlineNodes.([]interface{})))
+		data.ClusterOfflineNodes = float64(len(offlineNodes.([]any)))
 	}
 	return noCursor, nil
 }
 
 func clusterNodesStatusHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
-	mgmtNodes := status.state["management_cluster"].([]interface{})
+	mgmtNodes := status.state["management_cluster"].([]any)
 	for _, node := range mgmtNodes {
 		nodeData := new(Nsxv3ManagementNodeData)
 
-		nodeProperties := node.(map[string]interface{})
+		nodeProperties := node.(map[string]any)
 
-		nodeData.IP = nodeProperties["role_config"].(map[string]interface{})["api_listen_addr"].(map[string]interface{})["ip_address"].(string)
+		nodeData.IP = nodeProperties["role_config"].(map[string]any)["api_listen_addr"].(map[string]any)["ip_address"].(string)
 
-		nodeData.Connectivity = nodeConnectivityStates[nodeProperties["node_status"].(map[string]interface{})["mgmt_cluster_status"].(map[string]interface{})["mgmt_cluster_status"].(string)]
+		nodeData.Connectivity = nodeConnectivityStates[nodeProperties["node_status"].(map[string]any)["mgmt_cluster_status"].(map[string]any)["mgmt_cluster_status"].(string)]
 
-		nodeData.Version = nodeProperties["node_status"].(map[string]interface{})["version"].(string)
+		nodeData.Version = nodeProperties["node_status"].(map[string]any)["version"].(string)
 
-		timeSeries := nodeProperties["node_status_properties"].([]interface{})
+		timeSeries := nodeProperties["node_status_properties"].([]any)
 
 		for _, timeSeria := range timeSeries {
-			prop := timeSeria.(map[string]interface{})
+			prop := timeSeria.(map[string]any)
 
-			load := prop["load_average"].([]interface{})
+			load := prop["load_average"].([]any)
 
 			nodeData.CPUCores = prop["cpu_cores"].(float64)
 
@@ -125,14 +121,14 @@ func clusterNodesStatusHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, 
 			nodeData.SwapTotal = prop["swap_total"].(float64)
 			nodeData.SwapUse = prop["swap_used"].(float64)
 
-			filesystems := prop["file_systems"].([]interface{})
+			filesystems := prop["file_systems"].([]any)
 
 			for _, filesystem := range filesystems {
 				nodeDataStorage := new(Nsxv3NodeStorageData)
 
-				nodeDataStorage.filesystem = filesystem.(map[string]interface{})["mount"].(string)
-				nodeDataStorage.totalMetric = float64(filesystem.(map[string]interface{})["total"].(float64))
-				nodeDataStorage.usedMetric = float64(filesystem.(map[string]interface{})["used"].(float64))
+				nodeDataStorage.filesystem = filesystem.(map[string]any)["mount"].(string)
+				nodeDataStorage.totalMetric = float64(filesystem.(map[string]any)["total"].(float64))
+				nodeDataStorage.usedMetric = float64(filesystem.(map[string]any)["used"].(float64))
 
 				nodeData.Storage = append(
 					nodeData.Storage,
@@ -144,19 +140,19 @@ func clusterNodesStatusHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, 
 		data.ManagementNodes = append(data.ManagementNodes, *nodeData)
 	}
 
-	controlNodes := status.state["controller_cluster"].([]interface{})
+	controlNodes := status.state["controller_cluster"].([]any)
 
 	for _, node := range controlNodes {
 		nodeData := new(Nsxv3ControlNodeData)
 
-		nodeProperties := node.(map[string]interface{})
+		nodeProperties := node.(map[string]any)
 
-		nodeData.IP = nodeProperties["role_config"].(map[string]interface{})["control_plane_listen_addr"].(map[string]interface{})["ip_address"].(string)
+		nodeData.IP = nodeProperties["role_config"].(map[string]any)["control_plane_listen_addr"].(map[string]any)["ip_address"].(string)
 
-		controlNodeStatus := nodeProperties["node_status"].(map[string]interface{})["control_cluster_status"].(map[string]interface{})
+		controlNodeStatus := nodeProperties["node_status"].(map[string]any)["control_cluster_status"].(map[string]any)
 
 		nodeData.Connectivity = nodeConnectivityStates[controlNodeStatus["control_cluster_status"].(string)]
-		nodeData.ManagementConnectivity = nodeConnectivityStates[controlNodeStatus["mgmt_connection_status"].(map[string]interface{})["connectivity_status"].(string)]
+		nodeData.ManagementConnectivity = nodeConnectivityStates[controlNodeStatus["mgmt_connection_status"].(map[string]any)["connectivity_status"].(string)]
 
 		data.ControlNodes = append(data.ControlNodes, *nodeData)
 	}
@@ -165,14 +161,14 @@ func clusterNodesStatusHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, 
 
 func managerNodeFirewallHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	results := status.state["sections_summary"]
-	var sectionTypes []interface{}
+	var sectionTypes []any
 
 	if results != nil {
-		sectionTypes = results.([]interface{})
+		sectionTypes = results.([]any)
 	}
 
 	for _, section := range sectionTypes {
-		sectionType := section.(map[string]interface{})
+		sectionType := section.(map[string]any)
 		if sectionType["section_type"].(string) == "L3DFW" {
 			index := getNodeIndexByIP(data, status.request.URL.Host)
 			data.ManagementNodes[index].L3DFWSectionCount = sectionType["section_count"].(float64)
@@ -192,10 +188,10 @@ func managerNodeFirewallSectionsHandler(data *Nsxv3Data, status *Nsxv3Resource) 
 
 func transportNodeStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	results := status.state["results"]
-	var nodes []interface{}
+	var nodes []any
 
 	if results != nil {
-		nodes = results.([]interface{})
+		nodes = results.([]any)
 	}
 
 	next := noCursor
@@ -206,11 +202,11 @@ func transportNodeStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, 
 	for _, node := range nodes {
 		nodeData := new(Nsxv3TransportNodeData)
 
-		nodeProperties := node.(map[string]interface{})
+		nodeProperties := node.(map[string]any)
 
 		nodeData.ID = nodeProperties["transport_node_id"].(string)
 		nodeData.State = transportNodeStates[strings.ToUpper(nodeProperties["state"].(string))]
-		nodeData.DeploymentState = transportNodeStates[strings.ToUpper(nodeProperties["node_deployment_state"].(map[string]interface{})["state"].(string))]
+		nodeData.DeploymentState = transportNodeStates[strings.ToUpper(nodeProperties["node_deployment_state"].(map[string]any)["state"].(string))]
 
 		data.TransportNodes = append(data.TransportNodes, *nodeData)
 	}
@@ -226,7 +222,7 @@ func transportNodesStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string,
 }
 
 func logicalSwitchAdminStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
-	lswitches := status.state["results"].([]interface{})
+	lswitches := status.state["results"].([]any)
 
 	next := noCursor
 	cursor := status.state["cursor"]
@@ -237,7 +233,7 @@ func logicalSwitchAdminStateHander(data *Nsxv3Data, status *Nsxv3Resource) (stri
 	for _, lswitch := range lswitches {
 		lswitchData := new(Nsxv3LogicalSwitchAdminStateData)
 
-		lswitchProperties := lswitch.(map[string]interface{})
+		lswitchProperties := lswitch.(map[string]any)
 
 		lswitchData.id = lswitchProperties["id"].(string)
 		lswitchData.name = lswitchProperties["display_name"].(string)
@@ -249,7 +245,7 @@ func logicalSwitchAdminStateHander(data *Nsxv3Data, status *Nsxv3Resource) (stri
 }
 
 func logicalPortsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
-	logicalPorts := status.state["results"].([]interface{})
+	logicalPorts := status.state["results"].([]any)
 
 	next := noCursor
 	cursor := status.state["cursor"]
@@ -258,19 +254,19 @@ func logicalPortsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error)
 	}
 
 	for _, logicalPort := range logicalPorts {
-		port := logicalPort.(map[string]interface{})
+		port := logicalPort.(map[string]any)
 		logicalPortData := new(Nsxv3LogicalPortOperationalStateData)
 		logicalPortData.id = port["id"].(string)
 		splittedPortName := strings.Split(port["display_name"].(string), "@")
 		logicalPortData.hostID = splittedPortName[len(splittedPortName)-1] // Transport node ID is part of the name
-		logicalPortData.operationalStateMetric = logicalPortOperationalStates[port["status"].(map[string]interface{})["status"].(string)]
+		logicalPortData.operationalStateMetric = logicalPortOperationalStates[port["status"].(map[string]any)["status"].(string)]
 		data.LogicalPortOperationalStates = append(data.LogicalPortOperationalStates, *logicalPortData)
 	}
 	return next, nil
 }
 
 func logicalSwitchStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
-	lswitches := status.state["results"].([]interface{})
+	lswitches := status.state["results"].([]any)
 
 	next := noCursor
 	cursor := status.state["cursor"]
@@ -281,7 +277,7 @@ func logicalSwitchStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, e
 	for _, lswitch := range lswitches {
 		lswitchData := new(Nsxv3LogicalSwitchStateData)
 
-		lswitchProperties := lswitch.(map[string]interface{})
+		lswitchProperties := lswitch.(map[string]any)
 
 		lswitchData.id = lswitchProperties["logical_switch_id"].(string)
 		lswitchData.stateMetric = logicalSwitchStates[strings.ToUpper(lswitchProperties["state"].(string))]
@@ -307,7 +303,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 		return Nsxv3Resource{
 			kind: endpointStatusType,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/cluster/status"},
 			},
 		}
@@ -315,15 +311,16 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 		return Nsxv3Resource{
 			kind: ManagementClusterNodes,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/cluster/nodes/status"},
 			},
 		}
+
 	case ManagerNodeFirewall:
 		return Nsxv3Resource{
 			kind: ManagerNodeFirewall,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/firewall/sections/summary"},
 			},
 		}
@@ -331,7 +328,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 		return Nsxv3Resource{
 			kind: ManagerNodeFirewallSections,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/firewall/sections"},
 			},
 		}
@@ -339,7 +336,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 		return Nsxv3Resource{
 			kind: LogicalSwitch,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/logical-switches"},
 			},
 		}
@@ -347,7 +344,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 		return Nsxv3Resource{
 			kind: LogicalSwitchAdmin,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/logical-switches/state"},
 			},
 		}
@@ -355,7 +352,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 		return Nsxv3Resource{
 			kind: TransportNode,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/transport-nodes/state"},
 			},
 		}
@@ -363,7 +360,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 		return Nsxv3Resource{
 			kind: TransportNodes,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/transport-nodes/status"},
 			},
 		}
@@ -371,7 +368,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 		return Nsxv3Resource{
 			kind: LogicalPort,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL: &url.URL{
 					Host: endpointHost,
 					Path: "/policy/api/v1/search",
@@ -393,7 +390,7 @@ func getEndpointStatus(endpointStatusType Nsxv3ResourceKind, endpointHost string
 		return Nsxv3Resource{
 			kind: ActivityFrameworkStatistics,
 			request: &http.Request{
-				Method: "GET",
+				Method: http.MethodGet,
 				URL:    &url.URL{Host: endpointHost, Path: "/api/v1/operational/activityframework/scheduler/statistics"},
 			},
 		}
@@ -424,12 +421,12 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	case ActivityFrameworkStatistics:
 		return activityFramworkStatisticsHandler(data, status)
 	}
-	return noCursor, fmt.Errorf("Unsupported Endpoint Type %v", status.kind)
+	return noCursor, fmt.Errorf("unsupported Endpoint Type %v", status.kind)
 }
 
 func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error {
 	clients := map[string]Nsxv3Client{
-		e.NSXv3Configuration.LoginHost: GetClient(e.NSXv3Configuration),
+		e.LoginHost: GetClient(e.NSXv3Configuration),
 	}
 
 	chSize := len(endpoints)
@@ -439,7 +436,7 @@ func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error 
 	for id := range endpoints {
 		host := endpoints[id].request.URL.Host
 		if host == "" {
-			host = e.NSXv3Configuration.LoginHost
+			host = e.LoginHost
 		}
 		client, ok := clients[host]
 		if !ok {
@@ -451,19 +448,17 @@ func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error 
 		go e.updateData(data, &client, &endpoints[id], ch)
 	}
 
-	var errs []interface{}
+	var errs []any
 
-	for i := 0; i < chSize; i++ {
-		select {
-		case err := <-ch:
-			if err != nil {
-				errs = append(errs, err)
-			}
+	for range chSize {
+		err := <-ch
+		if err != nil {
+			errs = append(errs, err)
 		}
 	}
 
 	if len(errs) != 0 {
-		e := errors.New("Data collection completed with errors")
+		e := errors.New("data collection completed with errors")
 		for _, err := range errs {
 			log.Error(err)
 		}
@@ -474,8 +469,8 @@ func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error 
 }
 
 func (e *Exporter) gather(data *Nsxv3Data) error {
-	log.Info("Data collection started")
-	data.ClusterHost = e.NSXv3Configuration.LoginHost
+	log.Info("data collection started")
+	data.ClusterHost = e.LoginHost
 
 	var err error
 
@@ -534,7 +529,10 @@ func (e *Exporter) updateData(data *Nsxv3Data, client *Nsxv3Client, status *Nsxv
 
 		nextStatus := getEndpointStatus(status.kind, status.request.URL.Host)
 
-		query, _ := url.ParseQuery(nextStatus.request.URL.RawQuery)
+		query, err := url.ParseQuery(nextStatus.request.URL.RawQuery)
+		if err != nil {
+			ch <- fmt.Errorf("error parsing URL query: %w", err)
+		}
 		query.Add("cursor", cursor)
 		nextStatus.request.URL.RawQuery = query.Encode()
 

@@ -2,12 +2,12 @@ package exporter
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+
 	log "github.com/sirupsen/logrus"
 )
 
 // GetMetricsDescription - creates Prometheus metrics description
 func GetMetricsDescription() map[string]*prometheus.Desc {
-
 	APIMetrics := make(map[string]*prometheus.Desc)
 
 	APIMetrics["ManagementClusterStatus"] = prometheus.NewDesc(
@@ -325,12 +325,10 @@ func (e *Exporter) processMetrics(data *Nsxv3Data, ch chan<- prometheus.Metric) 
 	for _, element := range data.LogicalPortOperationalStates {
 		e.processLogicalPortOperationalStateMetrics(data.ClusterHost, &element, ch)
 	}
-
 	return nil
-
 }
 
-func (e *Exporter) processManagementNodeMetrics(host string, data *Nsxv3ManagementNodeData, ch chan<- prometheus.Metric) error {
+func (e *Exporter) processManagementNodeMetrics(host string, data *Nsxv3ManagementNodeData, ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["ManagementNodeConnectivity"],
 		prometheus.GaugeValue,
@@ -415,12 +413,9 @@ func (e *Exporter) processManagementNodeMetrics(host string, data *Nsxv3Manageme
 			element.usedMetric,
 			host, data.IP, element.filesystem)
 	}
-
-	return nil
 }
 
-func (e *Exporter) processControlNodeMetrics(host string, data *Nsxv3ControlNodeData, ch chan<- prometheus.Metric) error {
-
+func (e *Exporter) processControlNodeMetrics(host string, data *Nsxv3ControlNodeData, ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["ControlNodeConnectivity"],
 		prometheus.GaugeValue,
@@ -432,12 +427,9 @@ func (e *Exporter) processControlNodeMetrics(host string, data *Nsxv3ControlNode
 		prometheus.GaugeValue,
 		data.ManagementConnectivity,
 		host, data.IP)
-
-	return nil
 }
 
-func (e *Exporter) processTransportNodeMetrics(host string, data *Nsxv3TransportNodeData, ch chan<- prometheus.Metric) error {
-
+func (e *Exporter) processTransportNodeMetrics(host string, data *Nsxv3TransportNodeData, ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["TransportNodeState"],
 		prometheus.GaugeValue,
@@ -449,38 +441,28 @@ func (e *Exporter) processTransportNodeMetrics(host string, data *Nsxv3Transport
 		prometheus.GaugeValue,
 		data.DeploymentState,
 		host, data.ID)
-
-	return nil
 }
 
-func (e *Exporter) processLogicalSwitchAdminStateMetrics(host string, data *Nsxv3LogicalSwitchAdminStateData, ch chan<- prometheus.Metric) error {
-
+func (e *Exporter) processLogicalSwitchAdminStateMetrics(host string, data *Nsxv3LogicalSwitchAdminStateData, ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["LogicalSwitchAdminState"],
 		prometheus.GaugeValue,
 		data.adminStateMetric,
 		host, data.name, data.id)
-
-	return nil
 }
 
-func (e *Exporter) processLogicalPortOperationalStateMetrics(host string, data *Nsxv3LogicalPortOperationalStateData, ch chan<- prometheus.Metric) error {
+func (e *Exporter) processLogicalPortOperationalStateMetrics(host string, data *Nsxv3LogicalPortOperationalStateData, ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["LogicalPortOperationalState"],
 		prometheus.GaugeValue,
 		data.operationalStateMetric,
 		host, data.id, data.hostID)
-
-	return nil
 }
 
-func (e *Exporter) processLogicalSwitchStateMetrics(host string, data *Nsxv3LogicalSwitchStateData, ch chan<- prometheus.Metric) error {
-
+func (e *Exporter) processLogicalSwitchStateMetrics(host string, data *Nsxv3LogicalSwitchStateData, ch chan<- prometheus.Metric) {
 	ch <- prometheus.MustNewConstMetric(
 		e.APIMetrics["LogicalSwitchState"],
 		prometheus.GaugeValue,
 		data.stateMetric,
 		host, data.id)
-
-	return nil
 }

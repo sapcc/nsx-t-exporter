@@ -5,17 +5,18 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
-	"golang.org/x/time/rate"
-
 	nsxv3config "github.com/sapcc/nsx-t-exporter/config"
+
 	log "github.com/sirupsen/logrus"
+
+	"golang.org/x/time/rate"
 )
 
 const pathCreateSession = "/api/session/create"
@@ -54,7 +55,7 @@ type Nsxv3Resource struct {
 	request  *http.Request
 	response *http.Response
 	kind     Nsxv3ResourceKind
-	state    map[string]interface{} // JSON
+	state    map[string]any // JSON
 	err      error
 }
 
@@ -69,7 +70,8 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 		}).Dial,
 		TLSHandshakeTimeout: timeout,
 		IdleConnTimeout:     timeout,
-		TLSClientConfig:     &tls.Config{InsecureSkipVerify: c.SuppressSslWarnings},
+		////nolint:gosec G402: TLS InsecureSkipVerify may be set to true.
+		TLSClientConfig:     &tls.Config{InsecureSkipVerify: c.SuppressSslWarnings}, // #nosec G402
 		MaxIdleConns:        c.RequestsConnPoolSize,
 		MaxIdleConnsPerHost: c.RequestsConnPoolSize,
 	}
@@ -87,7 +89,6 @@ func GetClient(c nsxv3config.NSXv3Configuration) Nsxv3Client {
 
 // login to NSXv3 manager
 func (c *Nsxv3Client) login(force bool) error {
-
 	if !force && (c.cookie != "" || c.token != "") {
 		return nil
 	}
@@ -97,7 +98,7 @@ func (c *Nsxv3Client) login(force bool) error {
 	requestBody.Set("j_password", c.config.LoginPassword)
 
 	req, err := http.NewRequest(
-		"POST",
+		http.MethodPost,
 		fmt.Sprintf("https://%s%s", c.config.LoginHost, pathCreateSession),
 		strings.NewReader(requestBody.Encode()))
 
@@ -112,7 +113,7 @@ func (c *Nsxv3Client) login(force bool) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	resp.Body.Close()
 
 	c.cookie = resp.Header.Get("Set-Cookie")
 	c.token = resp.Header.Get("X-XSRF-TOKEN")
@@ -121,7 +122,10 @@ func (c *Nsxv3Client) login(force bool) error {
 
 // AsyncGetRequest executes http get requests in an async mode
 func (c *Nsxv3Client) updateEndpointStatus(status *Nsxv3Resource) {
-	c.login(false)
+	if err := c.login(false); err != nil {
+		status.err = err
+		return
+	}
 
 	if status.request.URL.Host == "" {
 		status.request.URL.Host = c.config.LoginHost
@@ -134,21 +138,20 @@ func (c *Nsxv3Client) updateEndpointStatus(status *Nsxv3Resource) {
 	status.request.Header.Set("X-XSRF-TOKEN", c.token)
 
 	status.response, status.err = c.executeRequest(status.request)
+	defer status.response.Body.Close()
 
 	if status.err != nil {
 		return
 	}
 
-	if !(status.response.StatusCode >= 200 && status.response.StatusCode <= 299) {
-		status.err = fmt.Errorf("Request to endpoint %v failed with %d", status.kind, status.response.StatusCode)
+	if status.response.StatusCode < 200 || status.response.StatusCode > 299 {
+		status.err = fmt.Errorf("request to endpoint %v failed with %d", status.kind, status.response.StatusCode)
 		return
 	}
 
-	defer status.response.Body.Close()
-
 	var body []byte
 
-	body, status.err = ioutil.ReadAll(status.response.Body)
+	body, status.err = io.ReadAll(status.response.Body)
 
 	if status.err != nil {
 		return
@@ -161,7 +164,7 @@ func (c *Nsxv3Client) executeRequest(req *http.Request) (*http.Response, error) 
 	var cancel context.CancelFunc
 	var childContext context.Context
 
-	if c.limiter.Allow() == false {
+	if !c.limiter.Allow() {
 		childContext, cancel = context.WithTimeout(
 			c.context,
 			time.Duration(c.config.RequestsPerSecondTimeout)*time.Second)
