@@ -222,7 +222,7 @@ func transportNodesStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string,
 	return noCursor, nil
 }
 
-func logicalSwitchAdminStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+func logicalSwitchAdminStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	lswitches := status.state["results"].([]any)
 
 	next := noCursor
@@ -258,15 +258,15 @@ func logicalPortsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error)
 		port := logicalPort.(map[string]any)
 		logicalPortData := new(Nsxv3LogicalPortOperationalStateData)
 		logicalPortData.id = port["id"].(string)
-		splittedPortName := strings.Split(port["display_name"].(string), "@")
-		logicalPortData.hostID = splittedPortName[len(splittedPortName)-1] // Transport node ID is part of the name
+		splitPortName := strings.Split(port["display_name"].(string), "@")
+		logicalPortData.hostID = splitPortName[len(splitPortName)-1] // Transport node ID is part of the name
 		logicalPortData.operationalStateMetric = logicalPortOperationalStates[port["status"].(map[string]any)["status"].(string)]
 		data.LogicalPortOperationalStates = append(data.LogicalPortOperationalStates, *logicalPortData)
 	}
 	return next, nil
 }
 
-func logicalSwitchStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+func logicalSwitchStateHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	lswitches := status.state["results"].([]any)
 
 	next := noCursor
@@ -288,7 +288,7 @@ func logicalSwitchStateHander(data *Nsxv3Data, status *Nsxv3Resource) (string, e
 	return next, nil
 }
 
-func activityFramworkStatisticsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
+func activityFrameworkStatisticsHandler(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	data.Scheduler.TotalQueued = status.state["total_queued"].(float64)
 	data.Scheduler.TotalScheduled = status.state["total_scheduled"].(float64)
 	data.Scheduler.TotalExecuting = status.state["total_executing"].(float64)
@@ -410,9 +410,9 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	case ManagerNodeFirewallSections:
 		return managerNodeFirewallSectionsHandler(data, status)
 	case LogicalSwitch:
-		return logicalSwitchAdminStateHander(data, status)
+		return logicalSwitchAdminStateHandler(data, status)
 	case LogicalSwitchAdmin:
-		return logicalSwitchStateHander(data, status)
+		return logicalSwitchStateHandler(data, status)
 	case TransportNode:
 		return transportNodeStateHandler(data, status)
 	case TransportNodes:
@@ -420,7 +420,7 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	case LogicalPort:
 		return logicalPortsHandler(data, status)
 	case ActivityFrameworkStatistics:
-		return activityFramworkStatisticsHandler(data, status)
+		return activityFrameworkStatisticsHandler(data, status)
 	}
 	return noCursor, fmt.Errorf("unsupported Endpoint Type %v", status.kind)
 }

@@ -2,7 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-[default.extend-words]
+[default.extend-identifiers]
+NSXV3_SUPPRESS_SSL_WORNINGS = "NSXV3_SUPPRESS_SSL_WORNINGS"
+WORNINGS = "WORNINGS"
 
 [files]
 extend-exclude = [
