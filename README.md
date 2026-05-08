@@ -13,9 +13,9 @@ NSX-T Expoerter takes input from environment variables as:
 - `NSXV3_LOGIN_PASSWORD` NSX-T Manager Node login password.
 
 ### Optional Variables
-- `NSXV3_REQUESTS_PER_SECOND` (10) NSX-T Manager Node requestes per second [<100].
-- `NSXV3_REQUESTS_PER_SECOND_TIMEOUT` (10) NSX-T Manager Node requestes per second timeout
-- `NSXV3_SUPPRESS_SSL_WORNINGS` (false) NSX-T Manager Node disables ssl host validattion.
+- `NSXV3_REQUESTS_PER_SECOND` (10) NSX-T Manager Node requests per second [<100].
+- `NSXV3_REQUESTS_PER_SECOND_TIMEOUT` (10) NSX-T Manager Node requests per second timeout
+- `NSXV3_SUPPRESS_SSL_WORNINGS` (false) NSX-T Manager Node disables ssl host validation.
 - `LOG_LEVEL` (debug) NSX-T Exporter logging level.
 
 ## Build
@@ -46,11 +46,11 @@ services:
       - NSXV3_LOGIN_PORT=<NSX-T Manager Node port>
       - NSXV3_LOGIN_USER=<NSX-T Manager Node login user>
       - NSXV3_LOGIN_PASSWORD=<NSX-T Manager Node login password>
-      - NSXV3_REQUESTS_PER_SECOND=<NSX-T Manager Node requestes per second [<100]>
-      - NSXV3_REQUESTS_PER_SECOND_TIMEOUT=<NSX-T Manager Node requestes per second timeout>
+      - NSXV3_REQUESTS_PER_SECOND=<NSX-T Manager Node requests per second [<100]>
+      - NSXV3_REQUESTS_PER_SECOND_TIMEOUT=<NSX-T Manager Node requests per second timeout>
       - NSXV3_CONNECTION_POOL_SIZE=<NSX-T Manager Node connection pool size>
       - NSXV3_REQUEST_TIMEOUT_SECONDS=<NSX-T Manager request timeout in seconds>
-      - NSXV3_SUPPRESS_SSL_WORNINGS=<NSX-T Manager Node disables ssl host validattion>
+      - NSXV3_SUPPRESS_SSL_WORNINGS=<NSX-T Manager Node disables ssl host validation>
       - SCRAP_PORT=<The exporter scrap port>
       - SCRAP_SCHEDULE_SECONDS=<The exporter scrap NSX-T Manager schedule in seconds>
       - LOG_LEVEL=<NSX-T Exporter logging level.>
