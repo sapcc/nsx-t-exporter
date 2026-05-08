@@ -1,6 +1,7 @@
 package exporter
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -424,7 +425,7 @@ func handle(data *Nsxv3Data, status *Nsxv3Resource) (string, error) {
 	return noCursor, fmt.Errorf("unsupported Endpoint Type %v", status.kind)
 }
 
-func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error {
+func (e *Exporter) gatherWave(ctx context.Context, data *Nsxv3Data, endpoints []Nsxv3Resource) error {
 	clients := map[string]Nsxv3Client{
 		e.LoginHost: GetClient(e.NSXv3Configuration),
 	}
@@ -445,7 +446,7 @@ func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error 
 			client = GetClient(config)
 			clients[host] = client
 		}
-		go e.updateData(data, &client, &endpoints[id], ch)
+		go e.updateData(ctx, data, &client, &endpoints[id], ch)
 	}
 
 	var errs []any
@@ -468,13 +469,14 @@ func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error 
 	return nil
 }
 
-func (e *Exporter) gather(data *Nsxv3Data) error {
+func (e *Exporter) gather(ctx context.Context, data *Nsxv3Data) error {
 	log.Info("Asynchronous data collection started")
 	data.ClusterHost = e.LoginHost
 
 	var err error
 
 	err = e.gatherWave(
+		ctx,
 		data,
 		[]Nsxv3Resource{
 			getEndpointStatus(ManagementCluster, ""),
@@ -498,7 +500,7 @@ func (e *Exporter) gather(data *Nsxv3Data) error {
 			getEndpointStatus(ManagerNodeFirewallSections, element.IP))
 	}
 
-	err = e.gatherWave(data, endpoints)
+	err = e.gatherWave(ctx, data, endpoints)
 
 	if err != nil {
 		return err
@@ -511,8 +513,8 @@ func (e *Exporter) gather(data *Nsxv3Data) error {
 	return nil
 }
 
-func (e *Exporter) updateData(data *Nsxv3Data, client *Nsxv3Client, status *Nsxv3Resource, ch chan error) {
-	client.updateEndpointStatus(status)
+func (e *Exporter) updateData(ctx context.Context, data *Nsxv3Data, client *Nsxv3Client, status *Nsxv3Resource, ch chan error) {
+	client.updateEndpointStatus(ctx, status)
 
 	if status.err != nil {
 		ch <- status.err
@@ -536,7 +538,7 @@ func (e *Exporter) updateData(data *Nsxv3Data, client *Nsxv3Client, status *Nsxv
 		query.Add("cursor", cursor)
 		nextStatus.request.URL.RawQuery = query.Encode()
 
-		e.updateData(data, client, &nextStatus, ch)
+		e.updateData(ctx, data, client, &nextStatus, ch)
 	} else {
 		ch <- err
 	}
