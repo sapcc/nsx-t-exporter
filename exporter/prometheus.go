@@ -30,6 +30,9 @@ func (e *Exporter) CollectAsync() {
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
 	// Set Prometheus gauge metrics using the e.Cache
 	// Panics if an error occurs during processing
-	e.processMetrics(&e.Cache, ch)
-	log.Info("All Metrics successfully collected")
+	if err := e.processMetrics(&e.Cache, ch); err != nil {
+		log.Errorf("%v", err)
+		return
+	}
+	log.Info("Successfully scraped cached metrics")
 }
