@@ -1,0 +1,63 @@
+# Configuration file for <https://github.com/sapcc/nsx-t-exporter>
+
+metadata:
+  url: https://github.com/sapcc/nsx-t-exporter
+
+binaries:
+  - name:        nsxt-exporter
+    fromPackage: .
+    installTo:   bin/
+
+dockerfile:
+  # Custom Dockerfile using Distroless base image
+  enabled: true
+  entrypoint: ["/usr/bin/nsxt-exporter"]
+  checkEnv:
+    - CHECK_SKIPS_FUNCTIONAL_TEST=true
+
+
+golang:
+  setGoModVersion: true
+
+golangciLint:
+  createConfig: true
+  timeout: 10m
+
+shellCheck:
+
+goReleaser:
+  createConfig: false
+
+license:
+  addHeaders: true
+  checkDependencies: true
+  copyright: 'SAP SE or an SAP affiliate company and IronCore contributors'
+  spdx: Apache-2.0
+
+nix:
+  enabled: false
+
+reuse:
+  # Custom REUSE.toml with minimal settings
+  enabled: false
+
+renovate:
+  enabled: true
+  assignees:
+    - sven-rosenzweig
+    - mutax
+
+githubWorkflow:
+  ci:
+    enabled: false
+  license:
+    enabled: true
+  release:
+    enabled: false
+  securityChecks:
+    enabled: true
+  pushContainerToGhcr:
+    enabled: false
+
+variables:
+  GO_BUILDENV: 'CGO_ENABLED=0'

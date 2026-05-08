@@ -13,6 +13,8 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/sapcc/go-api-declarations/bininfo"
 )
 
 var (
@@ -37,6 +39,8 @@ func init() {
 
 	// Output to stdout instead of the default stderr
 	log.SetOutput(os.Stdout)
+
+	bininfo.HandleVersionArgument()
 
 	exporterConfig = config.Init()
 
