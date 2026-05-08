@@ -22,7 +22,6 @@ type NSXv3Configuration struct {
 
 // Init Loads NSXv3Configuration value from the OS environment variables and validate them
 func Init() NSXv3Configuration {
-
 	nsxv3Config := NSXv3Configuration{}
 
 	if err := env.Parse(&nsxv3Config); err != nil {

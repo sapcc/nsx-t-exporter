@@ -2,6 +2,7 @@ package exporter
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
+
 	"github.com/sapcc/nsx-t-exporter/config"
 )
 

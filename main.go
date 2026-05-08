@@ -48,7 +48,6 @@ func init() {
 }
 
 func main() {
-
 	// Only log the warning severity or above.
 	log.SetLevel(log.DebugLevel)
 
@@ -59,7 +58,7 @@ func main() {
 
 	contextLogger.Info("Starting Exporter")
 
-	exporter := exporter.Exporter{
+	ex := exporter.Exporter{
 		APIMetrics:         metrics,
 		NSXv3Configuration: exporterConfig,
 	}
@@ -68,8 +67,8 @@ func main() {
 	go func() {
 		for {
 			start := time.Now()
-			exporter.CollectAsync()
-			elapsed := time.Now().Sub(start)
+			ex.CollectAsync()
+			elapsed := time.Since(start)
 			schedule := time.Duration(exporterConfig.ScrapScheduleSeconds) * time.Second
 			time.Sleep(schedule - elapsed)
 		}
@@ -77,13 +76,25 @@ func main() {
 
 	// Register Metrics from each of the endpoints
 	// This invokes the Collect method through the prometheus client libraries.
-	prometheus.MustRegister(&exporter)
+	prometheus.MustRegister(&ex)
 
 	// Setup HTTP handler
-	http.Handle("/metrics", promhttp.Handler())
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(indexPage))
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		if _, err := w.Write([]byte(indexPage)); err != nil {
+			log.Error(err)
+		}
 	})
 
-	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", exporterConfig.ScrapPort), nil))
+	server := &http.Server{
+		Addr:              fmt.Sprintf(":%d", exporterConfig.ScrapPort),
+		Handler:           mux,
+		ReadHeaderTimeout: 3 * time.Second,
+	}
+
+	err := server.ListenAndServe()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

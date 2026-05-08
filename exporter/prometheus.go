@@ -7,16 +7,13 @@ import (
 
 // Describe the API metrics in Prometheus
 func (e *Exporter) Describe(ch chan<- *prometheus.Desc) {
-
 	for _, m := range e.APIMetrics {
 		ch <- m
 	}
-
 }
 
 // CollectAsync - Asynchronously scraps the API and stores into struct
 func (e *Exporter) CollectAsync() {
-
 	data := Nsxv3Data{}
 	err := e.gather(&data)
 
@@ -31,15 +28,8 @@ func (e *Exporter) CollectAsync() {
 
 // Collect is a Prometheus callback for scrape operations (/metrics page)
 func (e *Exporter) Collect(ch chan<- prometheus.Metric) {
-
 	// Set Prometheus gauge metrics using the e.Cache
-	err := e.processMetrics(&e.Cache, ch)
-
-	if err != nil {
-		log.Error("Error Processing Metrics", err)
-		return
-	}
-
+	// Panics if an error occurs during processing
+	e.processMetrics(&e.Cache, ch)
 	log.Info("All Metrics successfully collected")
-
 }
