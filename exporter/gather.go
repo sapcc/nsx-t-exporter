@@ -469,7 +469,7 @@ func (e *Exporter) gatherWave(data *Nsxv3Data, endpoints []Nsxv3Resource) error 
 }
 
 func (e *Exporter) gather(data *Nsxv3Data) error {
-	log.Info("data collection started")
+	log.Info("Asynchronous data collection started")
 	data.ClusterHost = e.LoginHost
 
 	var err error
@@ -507,7 +507,7 @@ func (e *Exporter) gather(data *Nsxv3Data) error {
 	data.ExtractedActualValues = true
 	data.LastSuccessfulDataFetch = float64(time.Now().Unix())
 
-	log.Info("Data collection completed")
+	log.Info("Asynchronous data collection completed")
 	return nil
 }
 

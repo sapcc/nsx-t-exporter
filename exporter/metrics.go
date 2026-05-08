@@ -1,9 +1,9 @@
 package exporter
 
 import (
-	"github.com/prometheus/client_golang/prometheus"
+	"errors"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 // GetMetricsDescription - creates Prometheus metrics description
@@ -226,8 +226,7 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 // processMetrics - processes the response data and sets the metrics using it as a source
 func (e *Exporter) processMetrics(data *Nsxv3Data, ch chan<- prometheus.Metric) error {
 	if !data.ExtractedActualValues {
-		log.Warn("Metrics processing completed with error, will not report any metrics.")
-		return nil
+		return errors.New("metrics processing completed with error, will not report any metrics")
 	}
 
 	// Prometheus scrape metric callback (concurrent)
