@@ -6,6 +6,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const NSXV3_NODE_IP = "nsxv3_node_ip"
+const NSXV3_MANAGER_HOSTNAME = "nsxv3_manager_hostname"
+const NSXV3_NODE_ID = "nsxv3_node_id"
+
 // GetMetricsDescription - creates Prometheus metrics description
 func GetMetricsDescription() map[string]*prometheus.Desc {
 	APIMetrics := make(map[string]*prometheus.Desc)
@@ -13,211 +17,211 @@ func GetMetricsDescription() map[string]*prometheus.Desc {
 	APIMetrics["ManagementClusterStatus"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "cluster_management", "status"),
 		"NSX-T management cluster status - STABLE=1, INITIALIZING=0, UNSTABLE=-1, DEGRADED=-2, UNKNOWN=-3",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["ManagementClusterLastSuccessfulConnection"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "cluster_management", "last_successful_data_fetch"),
 		"NSX-T last successful data fetch in UNIX timestamp converted to float64",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["ControlClusterStatus"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "cluster_control", "status"),
 		"NSX-T control cluster status - STABLE=1, NO_CONTROLLERS=0, UNSTABLE=-1, DEGRADED=-2, UNKNOWN=-3",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["ManagementClusterNodesOnline"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "cluster_management", "online_nodes"),
 		"NSX-T management cluster online nodes",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["ManagementClusterNodesOffline"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "cluster_management", "offline_nodes"),
 		"NSX-T management cluster offline nodes",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["ManagementNodeConnectivity"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "connectivity"),
 		"NSX-T management node connectivity - CONNECTED > 0, DISCONNECTED = 0, UNKNOWN < 0",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ManagementNodeVersion"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "version"),
 		"NSX-T management node version",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip", "nsxv3_node_version"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP, "nsxv3_node_version"}, nil,
 	)
 
 	APIMetrics["ManagementNodeCpuCores"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "cpu_cores"),
 		"NSX-T management node cpu cores",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ManagementNodeLoadAverage"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "load_average"),
 		"NSX-T management node average load",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip", "minutes"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP, "minutes"}, nil,
 	)
 
 	APIMetrics["ManagementNodeMemoryUse"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "memory_use"),
 		"NSX-T management node memory use",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ManagementNodeMemoryTotal"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "memory_total"),
 		"NSX-T management node memory total",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ManagementNodeMemoryCached"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "memory_cached"),
 		"NSX-T management node cached memory",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ManagementNodeSwapUse"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "swap_use"),
 		"NSX-T management node swap use",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ManagementNodeSwapTotal"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "swap_total"),
 		"NSX-T management node swap total",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ManagementNodeStorageUse"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "storage_use"),
 		"NSX-T management node storage use",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip", "filesystem"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP, "filesystem"}, nil,
 	)
 
 	APIMetrics["ManagementNodeStorageTotal"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node", "storage_total"),
 		"NSX-T management node storage total",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip", "filesystem"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP, "filesystem"}, nil,
 	)
 
 	APIMetrics["ManagerNodeFirewallTotalSectionCount"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node_firewall", "total_section_count"),
 		"NSX-T management node firewall all sections type count",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ManagerNodeFirewallSectionCount"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node_firewall", "section_count"),
 		"NSX-T management node firewall L3 section count",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ManagerNodeFirewallRuleCount"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "management_node_firewall", "rule_count"),
 		"NSX-T management node firewall L3 rule count",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ControlNodeConnectivity"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "control_node", "connectivity"),
 		"NSX-T control node connectivity - CONNECTED=1, DISCONNECTED=0, UNKNOWN=-1",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["ControlNodeManagementConnectivity"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "control_node", "management_connectivity"),
 		"NSX-T control node management connectivity - CONNECTED > 0, DISCONNECTED = 0, UNKNOWN < 0",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_ip"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_IP}, nil,
 	)
 
 	APIMetrics["TransportNodesUp"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "transport_nodes", "up"),
 		"NSX-T transport nodes with state up",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["TransportNodesDegraded"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "transport_nodes", "degraded"),
 		"NSX-T transport nodes with state degraded",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["TransportNodesDown"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "transport_nodes", "down"),
 		"NSX-T transport nodes with state down",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["TransportNodesUnknown"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "transport_nodes", "unknown"),
 		"NSX-T transport nodes with state unknown",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["TransportNodeState"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "transport_node", "state"),
 		"NSX-T transport node state - SUCCESS=1, IN_PROGRESS=0, PENDING=-1, FAILED=-2, PARTIAL_SUCCESS=-3, ORPHANED=-4, UNKNOWN=-5",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_id"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_ID}, nil,
 	)
 
 	APIMetrics["TransportNodeDeploymentState"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "transport_node", "deployment_state"),
 		"NSX-T transport node deployment state - SUCCESS=1, IN_PROGRESS=0, PENDING=-1, FAILED=-2, PARTIAL_SUCCESS=-3, ORPHANED=-4, UNKNOWN=-5",
-		[]string{"nsxv3_manager_hostname", "nsxv3_node_id"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, NSXV3_NODE_ID}, nil,
 	)
 
 	APIMetrics["LogicalSwitchAdminState"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "logical_switch", "admin_state"),
 		"NSX-T logical switch admin state - UP=1, DOWN=0",
-		[]string{"nsxv3_manager_hostname", "name", "id"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, "name", "id"}, nil,
 	)
 
 	APIMetrics["LogicalPortOperationalState"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "logical_port", "operational_state"),
 		"NSX-T logical port operational state - UP=1, DOWN=0, UNKNOWN=-1",
-		[]string{"nsxv3_manager_hostname", "id", "transport_node_id"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, "id", "transport_node_id"}, nil,
 	)
 
 	APIMetrics["LogicalSwitchState"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "logical_switch", "state"),
 		"NSX-T logical switch overall state -  SUCCESS=1, IN_PROGRESS=0, FAILED=-1, PARTIAL_SUCCESS=-2, ORPHANED=-3, UNKNOWN=-4",
-		[]string{"nsxv3_manager_hostname", "id"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME, "id"}, nil,
 	)
 
 	APIMetrics["SchedulerTotalComplete"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "scheduler", "total_complete"),
 		"NSX-T Scheduler total completed jobs",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["SchedulerTotalExecuting"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "scheduler", "total_executing"),
 		"NSX-T Scheduler total executing jobs",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["SchedulerTotalQueued"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "scheduler", "total_queued"),
 		"NSX-T Scheduler total queued jobs",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["SchedulerTotalScheduled"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "scheduler", "total_scheduled"),
 		"NSX-T Scheduler total scheduled jobs",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	APIMetrics["SchedulerTotalSuspended"] = prometheus.NewDesc(
 		prometheus.BuildFQName("nsxv3", "scheduler", "total_suspended"),
 		"NSX-T Scheduler total suspended jobs",
-		[]string{"nsxv3_manager_hostname"}, nil,
+		[]string{NSXV3_MANAGER_HOSTNAME}, nil,
 	)
 
 	return APIMetrics
