@@ -12,8 +12,6 @@ dockerfile:
   # Custom Dockerfile using Distroless base image
   enabled: true
   entrypoint: ["/usr/bin/nsxt-exporter"]
-  checkEnv:
-    - CHECK_SKIPS_FUNCTIONAL_TEST=true
 
 
 golang:
@@ -33,6 +31,12 @@ license:
   checkDependencies: true
   copyright: 'SAP SE or an SAP affiliate company and IronCore contributors'
   spdx: Apache-2.0
+
+typos:
+  enabled: true
+  extendWords:
+    NSXV3_SUPPRESS_SSL_WORNINGS: "NSXV3_SUPPRESS_SSL_WORNINGS"
+    WORNINGS: "WORNINGS"
 
 nix:
   enabled: false
