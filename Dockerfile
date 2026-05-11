@@ -1,7 +1,7 @@
 # SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
 # SPDX-License-Identifier: Apache-2.0
 
-FROM golang:1.26.2-alpine3.23 AS builder
+FROM golang:1.26.3-alpine3.23 AS builder
 
 RUN apk add --no-cache --no-progress ca-certificates gcc git make musl-dev
 
@@ -14,7 +14,7 @@ RUN make -C /src install PREFIX=/pkg GOTOOLCHAIN=local
 # To only build the tests run: docker build . --target test
 # We can't do `FROM builder AS test` here, as then make prepare-static-check would not be cached during interactive use when developing
 # and caching all the tools, especially golangci-lint, takes a few minutes.
-FROM golang:1.26.2-alpine3.23 AS test
+FROM golang:1.26.3-alpine3.23 AS test
 
 COPY Makefile /src/Makefile
 
@@ -31,7 +31,7 @@ RUN apk add --no-cache --no-progress git make typos \
 COPY --from=builder /go /go
 COPY --from=builder /src /src
 
-RUN CHECK_SKIPS_FUNCTIONAL_TEST=true make -C /src static-check
+RUN make -C /src static-check
 
 # Some things like postgres do not like to run as root. For simplicity, just always run as an unprivileged user,
 # but for it to be able to read the go cache, we need to allow it.
@@ -39,7 +39,7 @@ RUN chown -R 4200:4200 /src/ /go/
 USER 4200:4200
 RUN cd /src \
   && git config --global --add safe.directory /src \
-  && CHECK_SKIPS_FUNCTIONAL_TEST=true make build/cover.out
+  && make build/cover.out
 
 ################################################################################
 
