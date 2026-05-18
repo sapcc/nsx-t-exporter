@@ -35,8 +35,6 @@ license:
 typos:
   enabled: true
   extendWords:
-    NSXV3_SUPPRESS_SSL_WORNINGS: "NSXV3_SUPPRESS_SSL_WORNINGS"
-    WORNINGS: "WORNINGS"
 
 nix:
   enabled: false

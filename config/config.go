@@ -19,7 +19,7 @@ type NSXv3Configuration struct {
 	RequestsPerSecondTimeout int    `env:"NSXV3_REQUESTS_PER_SECOND_TIMEOUT" envDefault:"10"`
 	RequestsConnPoolSize     int    `env:"NSXV3_CONNECTION_POOL_SIZE" envDefault:"0"`
 	RequestTimeout           int    `env:"NSXV3_REQUEST_TIMEOUT_SECONDS" envDefault:"0"`
-	SuppressSslWarnings      bool   `env:"NSXV3_SUPPRESS_SSL_WORNINGS" envDefault:"false"`
+	SuppressSslWarnings      bool   `env:"NSXV3_SUPPRESS_SSL_WARNINGS" envDefault:"false"`
 	ScrapScheduleSeconds     int    `env:"SCRAP_SCHEDULE_SECONDS" envDefault:"0"`
 }
 
