@@ -4,7 +4,7 @@
 package config
 
 import (
-	"github.com/caarlos0/env/v6"
+	"github.com/caarlos0/env/v11"
 	log "github.com/sirupsen/logrus"
 )
 
