@@ -7,7 +7,7 @@ require (
 	github.com/fatih/structs v1.1.0
 	github.com/prometheus/client_golang v1.23.2
 	github.com/sapcc/go-api-declarations v1.22.0
-	github.com/sirupsen/logrus v1.8.1
+	github.com/sirupsen/logrus v1.8.3
 	golang.org/x/time v0.15.0
 )
 
