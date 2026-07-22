@@ -3,6 +3,7 @@
   "extends": [
     "config:recommended",
     "default:pinDigestsDisabled",
+    "docker:pinDigests",
     "mergeConfidence:all-badges",
     "docker:disable"
   ],
@@ -58,6 +59,13 @@
         "major"
       ],
       "dependencyDashboardApproval": true
+    },
+    {
+      "matchFileNames": [
+        ".github/workflows/checks.yaml",
+        ".github/workflows/codeql.yaml"
+      ],
+      "enabled": false
     }
   ],
   "prHourlyLimit": 0,
