@@ -1,9 +1,11 @@
 # SPDX-FileCopyrightText: 2025 SAP SE or an SAP affiliate company
 # SPDX-License-Identifier: Apache-2.0
 
-FROM golang:1.26.3-alpine3.23 AS builder
+ARG IMAGE=golang:1.26.5-alpine3.24
 
-RUN apk add --no-cache --no-progress ca-certificates gcc git make musl-dev
+FROM $IMAGE AS builder
+
+RUN apk add --no-cache --no-progress ca-certificates gcc musl-dev git make
 
 COPY . /src
 ARG BININFO_BUILD_DATE BININFO_COMMIT_HASH BININFO_VERSION # provided to 'make install'
@@ -14,7 +16,8 @@ RUN make -C /src install PREFIX=/pkg GOTOOLCHAIN=local
 # To only build the tests run: docker build . --target test
 # We can't do `FROM builder AS test` here, as then make prepare-static-check would not be cached during interactive use when developing
 # and caching all the tools, especially golangci-lint, takes a few minutes.
-FROM golang:1.26.3-alpine3.23 AS test
+# Optionally the base image can be overwritten with one where the tools are already installed and cached in.
+FROM $IMAGE AS test
 
 COPY Makefile /src/Makefile
 
@@ -38,12 +41,12 @@ RUN make -C /src static-check
 RUN chown -R 4200:4200 /src/ /go/
 USER 4200:4200
 RUN cd /src \
-  && git config --global --add safe.directory /src \
+  && { if test -d .git; then git config --global --add safe.directory /src; fi; } \
   && make build/cover.out
 
 ################################################################################
 
-FROM alpine:3.23
+FROM alpine:3.24
 
 RUN addgroup -g 4200 appgroup \
   && adduser -h /home/appuser -s /sbin/nologin -G appgroup -D -u 4200 appuser
